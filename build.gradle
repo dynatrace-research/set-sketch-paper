@@ -1,0 +1,297 @@
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+//
+// This software and associated documentation files (the "Software")
+// are being made available by Dynatrace LLC for purposes of
+// illustrating the implementation of certain algorithms which have
+// been published by Dynatrace LLC. Permission is hereby granted,
+// free of charge, to any person obtaining a copy of the Software,
+// to view and use the Software for internal, non-productive,
+// non-commercial purposes only – the Software may not be used to
+// process live data or distributed, sublicensed, modified and/or
+// sold either alone or as part of or in combination with any other
+// software.  
+//
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+// HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
+
+ext {
+    paperDir = 'paper'
+    pythonDir = 'python'
+    cppDir = 'c++'
+    wyhashDir = "wyhash"
+    dataDir = 'data'
+    wyhashZipFile = "wyhash_v4.zip"
+    wyhashCppDir = "${cppDir}/${wyhashDir}"
+    wyhashSourceDir = "${wyhashCppDir}/wyhash-wyhash_v4"
+    wyhashHeaderFile = "wyhash.h"
+}
+
+//#########################
+// tests
+//#########################
+   
+task buildBitstreamTestExecutable(type: Exec) {
+    inputs.files "${cppDir}/bitstream_test.cpp", "${cppDir}/bitstream_random.hpp"
+    outputs.files "${cppDir}/bitstream_test.out"
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'g++','-O3','-std=c++17','-Wall',"${cppDir}/bitstream_test.cpp",'-o',"${cppDir}/bitstream_test.out"
+}
+
+task executeBitstreamTest (type: Exec) {
+    inputs.files "${cppDir}/bitstream_test.out"
+    commandLine "${cppDir}/bitstream_test.out","${dataDir}"
+    dependsOn buildBitstreamTestExecutable
+}
+
+task buildRandomTestExecutable(type: Exec) {
+    inputs.files "${cppDir}/random_test.cpp", "${cppDir}/bitstream_random.hpp","${cppDir}/exponential_distribution.hpp","${wyhashCppDir}/${wyhashHeaderFile}"
+    outputs.files "${cppDir}/random_test.out"
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'g++','-O3','-std=c++17','-Wall','-DNDEBUG',"${cppDir}/random_test.cpp",'-o',"${cppDir}/random_test.out"
+    //commandLine 'g++','-O3','-std=c++17','-Wall',"${cppDir}/random_test.cpp",'-o',"${cppDir}/random_test.out"
+}
+
+def randomTestFiles = [ \
+    "${dataDir}/boolean.txt", \
+    "${dataDir}/uniformLemire3.txt", \
+    "${dataDir}/uniformLemire11.txt", \
+    "${dataDir}/uniformLemire29.txt", \
+    "${dataDir}/uniformLemire256.txt", \
+    "${dataDir}/uniformLumbroso3.txt", \
+    "${dataDir}/uniformLumbroso11.txt", \
+    "${dataDir}/uniformLumbroso29.txt", \
+    "${dataDir}/uniformLumbroso256.txt", \
+    "${dataDir}/intPow3.txt", \
+    "${dataDir}/intPow8.txt", \
+    "${dataDir}/expZiggurat.txt", \
+    "${dataDir}/expStandard.txt", \
+    "${dataDir}/uniformDouble.txt", \
+    "${dataDir}/uniformDoubleHalf.txt", \
+    "${dataDir}/bernoulliReal0_2.txt", \
+    "${dataDir}/bernoulliRatio1_3.txt", \
+    "${dataDir}/truncatedExp0.txt", \
+    "${dataDir}/truncatedExp0_1.txt", \
+    "${dataDir}/truncatedExp0_5.txt", \
+    "${dataDir}/truncatedExp1.txt", \
+    "${dataDir}/truncatedExp2.txt" ]
+
+def executeRandomTestOutput = "${dataDir}/random_test_calculation_times.txt"
+
+task executeRandomTest (type: Exec) {
+    inputs.files "${cppDir}/random_test.out"
+    outputs.files randomTestFiles
+    doFirst {
+        standardOutput = new FileOutputStream(executeRandomTestOutput)
+    }
+    commandLine "${cppDir}/random_test.out","${dataDir}"
+    dependsOn buildRandomTestExecutable
+}
+
+task performRandomTest (type: Exec) {
+    inputs.files randomTestFiles, "${pythonDir}/random_test.py"
+    outputs.files
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'python3', "${pythonDir}/random_test.py"
+    dependsOn executeRandomTest
+}
+
+task performTests {
+    group 'Main'
+    dependsOn performRandomTest, executeBitstreamTest
+}
+
+//#########################
+
+def header_files = [ "${cppDir}/sketch.hpp","${cppDir}/util.hpp","${cppDir}/bitstream_random.hpp","${cppDir}/exponential_distribution.hpp","${wyhashCppDir}/${wyhashHeaderFile}"]
+
+task buildCardinalityTestExecutable(type: Exec) {
+    inputs.files "${cppDir}/cardinality_test.cpp", header_files
+    outputs.files "${cppDir}/cardinality_test.out"
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'g++','-O3','-std=c++17','-fopenmp','-Wall',"${cppDir}/cardinality_test.cpp",'-o',"${cppDir}/cardinality_test.out"
+    //commandLine 'g++','-O0','-std=c++17','-fopenmp','-Wall',"${cppDir}/sketch_generation.cpp",'-o',"${cppDir}/sketch_generation.out"
+}
+
+task buildPerformanceTestExecutable(type: Exec) {
+    inputs.files "${cppDir}/performance_test.cpp", header_files
+    outputs.files "${cppDir}/performance_test.out"
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'g++','-O3','-std=c++17','-Wall','-DNDEBUG',"${cppDir}/performance_test.cpp",'-o',"${cppDir}/performance_test.out"
+    // commandLine 'g++','-O3','-std=c++17','-Wall',"${cppDir}/performance_test.cpp",'-o',"${cppDir}/performance_test.out"
+}
+
+task buildJointEstimationTestExecutable(type: Exec) {
+    inputs.files "${cppDir}/joint_estimation_test.cpp", header_files
+    outputs.files "${cppDir}/joint_estimation_test.out"
+    standardOutput = new ByteArrayOutputStream()
+    commandLine 'g++','-O3','-std=c++17','-fopenmp','-Wall',"${cppDir}/joint_estimation_test.cpp", '-o',"${cppDir}/joint_estimation_test.out"
+    // commandLine 'g++','-O3','-std=c++17','-Wall',"${cppDir}/joint_estimation_test.cpp",'-o',"${cppDir}/joint_estimation_test.out"
+}
+
+def cardinalityTestResults = [ \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=14662929af74678a;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;seed=01cd2ba5e72869c4;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=ee135ccdbaf83684;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=c2950eb3d4a4c77e;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=d532d9748fd00ce0;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;seed=66f86268110b0bfc;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=82a8545b35daf016;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;seed=32ee6041633624f4;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=525738371a6744a3;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=0153b464e5066cab;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=559075ffabc64341;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=9cc92d7fa9393899;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=1b297f07fc96869e;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=c6af5f872e8bb2bc;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=ddcd924a08baac8c;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=2cc151ec0c9f1e7c;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=1592d0e8b64ff10d;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=31d2dc0fbf11f576;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=d6960482253fc240;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=845cbab0654df26a;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=3f0da0e0183cd125;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=106826bc0c793764;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=62fdfc2132af106f;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=5ba34df0ff814e7a;).csv"]
+
+def performanceTestResults = [ \
+    "${dataDir}/performance_test(dummy;).csv",\
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=c45fcbf37f7900da;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;seed=38ed7e2c9017e399;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=e771a67e6a075a79;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=ba731718850df005;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=a35fb5263a6b8b0c;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;seed=bd44696fa13ed2b4;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=1d8f5a77f5bbb902;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;seed=ecc818200c3c6ef3;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=1024;q=54;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=0000000000000000;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=16384;q=50;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=0000000000000000;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=256;q=56;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=0000000000000000;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=4096;q=52;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=0000000000000000;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=6deaea5dae02750d;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=524c5f4ac61ddad7;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=3d6aac04d1dec8cf;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=c06b311001bd8a92;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=63b031c36fcd348d;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=78461f7915348ba1;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=c02f012f9f81ffd5;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=923f3c815254dac0;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=759934cdee109cdd;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=6e3c64196517a9ed;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=80ccde04166e17e6;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=2ea3947092370ade;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=e6a78c5e8aa8a7ac;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=3d7088784ba2c9f9;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=8121ebd56b11d982;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=5aec1299c64ec447;).csv"]
+
+def jointTestResults = [ \
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=6.10351562500000000e-05;seed=559075ffabc64341;).csv", \
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=ddcd924a08baac8c;).csv", \
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=3f0da0e0183cd125;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;seed=14662929af74678a;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=d532d9748fd00ce0;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=82a8545b35daf016;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;seed=1b297f07fc96869e;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=ee135ccdbaf83684;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=525738371a6744a3;).csv"]
+
+task runCardinalityTest(type: Exec) {
+    group 'Main'
+    inputs.files "${cppDir}/cardinality_test.out"
+    outputs.files cardinalityTestResults
+    standardOutput = new ByteArrayOutputStream()
+    commandLine "${cppDir}/cardinality_test.out"
+    dependsOn buildCardinalityTestExecutable
+}
+
+task runPerformanceTest(type: Exec) {
+    group 'Main'
+    inputs.files "${cppDir}/performance_test.out"
+    outputs.files performanceTestResults
+    standardOutput = new ByteArrayOutputStream()
+    commandLine "${cppDir}/performance_test.out"
+    dependsOn buildPerformanceTestExecutable
+}
+
+task runJointTest(type: Exec) {
+    group 'Main'
+    inputs.files "${cppDir}/joint_estimation_test.out"
+    outputs.files jointTestResults
+    standardOutput = new ByteArrayOutputStream()
+    commandLine "${cppDir}/joint_estimation_test.out"
+    dependsOn buildJointEstimationTestExecutable
+}
+
+
+def figFiles = []
+
+task makeHelperFuncErrorFigure (type: Exec) {
+    inputs.files "${pythonDir}/helper_func_error.py", "${pythonDir}/color_defs.py"
+    outputs.files "${paperDir}/helper_func_error.pdf"
+    commandLine 'python3', "${pythonDir}/helper_func_error.py"
+}
+figFiles += "${paperDir}/helper_func_error.pdf"
+
+task makeExpectedRelativeErrorFigure (type: Exec) {
+    inputs.files "${pythonDir}/expected_relative_error.py", "${pythonDir}/color_defs.py"
+    outputs.files "${paperDir}/expected_relative_error.pdf"
+    commandLine 'python3', "${pythonDir}/expected_relative_error.py"
+}
+figFiles += "${paperDir}/expected_relative_error.pdf"
+
+task makeCollisionProbabilityFigure (type: Exec) {
+    inputs.files "${pythonDir}/collision_probability.py", "${pythonDir}/color_defs.py"
+    outputs.files "${paperDir}/collision_probability.pdf","${paperDir}/mse_upperbound_estimation.pdf"
+    commandLine 'python3', "${pythonDir}/collision_probability.py"
+}
+figFiles += "${paperDir}/collision_probability.pdf"
+figFiles += "${paperDir}/mse_upperbound_estimation.pdf"
+
+task makeCardinalityFigure (type: Exec) {
+    inputs.files cardinalityTestResults, "${pythonDir}/cardinality_error_charts.py", "${pythonDir}/color_defs.py"
+    outputs.files "${paperDir}/cardinality.pdf"
+    commandLine 'python3', "${pythonDir}/cardinality_error_charts.py"
+}
+figFiles += "${paperDir}/cardinality.pdf"
+
+task makePerformanceFigure (type: Exec) {
+    inputs.files performanceTestResults, "${pythonDir}/performance_charts.py", "${pythonDir}/color_defs.py"
+    outputs.files "${paperDir}/performance.pdf"
+    commandLine 'python3', "${pythonDir}/performance_charts.py"
+}
+figFiles += "${paperDir}/performance.pdf"
+
+
+def jointFigFiles = [\
+    "${paperDir}/joint(GeneralizedHyperLogLog).pdf", \
+    "${paperDir}/joint(SetSketch1).pdf", \
+    "${paperDir}/joint(SetSketch2).pdf"
+]
+
+task makeJointFigures(type: Exec) {
+    inputs.files jointTestResults, "${pythonDir}/joint_charts.py", "${pythonDir}/color_defs.py"
+    outputs.files jointFigFiles
+    commandLine 'python3', "${pythonDir}/joint_charts.py"
+}
+figFiles += jointFigFiles
+
+
+task pdfFigures {
+    group 'Main'
+    dependsOn makeJointFigures, makeCardinalityFigure, makeHelperFuncErrorFigure, makeExpectedRelativeErrorFigure, makeCollisionProbabilityFigure, makePerformanceFigure
+}
+
+task buildAll {
+    group 'Main'
+    dependsOn buildRandomTestExecutable, buildBitstreamTestExecutable, buildCardinalityTestExecutable, buildPerformanceTestExecutable, buildJointEstimationTestExecutable
+}

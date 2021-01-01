@@ -1,0 +1,3 @@
+[submodule "c++/wyhash"]
+	path = c++/wyhash
+	url = https://github.com/wangyi-fudan/wyhash
