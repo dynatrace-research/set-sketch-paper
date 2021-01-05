@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -39,12 +39,12 @@ static_assert(std::numeric_limits<double>::is_iec559, "Require std::numeric_limi
 static constexpr double maxInverse = 1. / (UINT64_C(1) << 53);
 static constexpr double maxInverseHalf = 1. / (UINT64_C(1) << 54);
 
-// uniform distributed double value from [0, 1) 
+// uniform distributed double value from [0, 1)
 template<typename T> double getUniformDouble(T& bitstream) {
     return bitstream(53) * maxInverse;
 }
 
-// uniform distributed double value from [0, 0.5) 
+// uniform distributed double value from [0, 0.5)
 template<typename T> double getUniformDoubleHalf(T& bitstream) {
     return bitstream(53) * maxInverseHalf;
 }
@@ -116,7 +116,7 @@ static uint8_t getLog2Base(uint32_t v) {
             assert(tt <= 0xff);
             return 16 + LogTable256[tt];
         }
-    } 
+    }
     else  {
         const uint32_t t = v >> 8;
         if (t != 0) {
@@ -146,7 +146,7 @@ template<typename T> uint32_t getUniformLumbroso(uint32_t n, T& bitstream) {
 
     if (c < n) {
         return static_cast<uint32_t>(c);
-    }    
+    }
     uint64_t v = (UINT64_C(1) << l) - n;
     c -= n;
 
@@ -157,7 +157,7 @@ template<typename T> uint32_t getUniformLumbroso(uint32_t n, T& bitstream) {
         if (v >= n) {
             if (c < n) {
                 return static_cast<uint32_t>(c);
-            }    
+            }
             v -= n;
             c -= n;
         }
@@ -196,14 +196,14 @@ class WyrandBitStream {
         hashBits = wyrand(&state);
     }
 public:
-    
+
     WyrandBitStream(const WyrandBitStream& p) = delete;
     WyrandBitStream& operator=(const WyrandBitStream&) = delete;
     WyrandBitStream(WyrandBitStream&& p) = default;
     WyrandBitStream& operator=(WyrandBitStream&&) = default;
 
     WyrandBitStream(uint64_t value, uint64_t seed) : state(wyhash64(value, seed)), hashBits(0), availableBits(0) {}
-    
+
     // WyrandBitStream(uint64_t value1, uint64_t value2, uint64_t seed) : hashBits(0), availableBits(0) {
     //     uint64_t data[2];
     //     data[0] = value1;
@@ -246,10 +246,10 @@ class TruncatedExponentialDistribution {
 
 public:
 
-    TruncatedExponentialDistribution(double rate) : 
-            rate(rate), 
+    TruncatedExponentialDistribution(double rate) :
+            rate(rate),
             c1( (rate != 0) ? expm1(rate) / rate : 1),
-            c2( (rate != 0) ? -log1p(expm1(-rate)*0.5) / rate : 0.5), 
+            c2( (rate != 0) ? -log1p(expm1(-rate)*0.5) / rate : 0.5),
             c3( (rate != 0) ? -expm1(-rate) / rate : 1)
     {
         assert(rate >= 0);
@@ -257,7 +257,7 @@ public:
 
     TruncatedExponentialDistribution() : TruncatedExponentialDistribution(0) {}
 
-    template<typename T> 
+    template<typename T>
     double operator()(T& bitstream) const {
         double x = getUniformDouble(bitstream) * c1;
         if (x < 1) {
@@ -268,11 +268,11 @@ public:
                 x = getUniformDouble(bitstream);
                 if (x <= c2) return x;
                 double y = getUniformDoubleHalf(bitstream);
-                if (y > 1 - x) { // 25% chance that this condition is satisfied 
-                    x = 1 - x; 
+                if (y > 1 - x) { // 25% chance that this condition is satisfied
+                    x = 1 - x;
                     y = 1 - y;
                 }
-                
+
                 if ( x <= c3 * (1 - y)) return x;
                 double c1y = c1 * y;
                 if (c1y <= 1 - x) return x;
@@ -285,8 +285,8 @@ public:
 // based on Fisher-Yates shuffling
 class PermutationStream {
     static thread_local uint32_t size;
-	static thread_local uint32_t idx;
-	static thread_local uint32_t versionCounter;
+    static thread_local uint32_t idx;
+    static thread_local uint32_t versionCounter;
     static thread_local uint32_t allocated_size;
     static thread_local std::unique_ptr<std::pair<uint32_t, uint32_t>[]> permutationAndVersion;
     #if defined(_OPENMP)
@@ -294,26 +294,26 @@ class PermutationStream {
     #endif
 public:
 
-	bool hasNext() const {
-		return idx < size;
-	}
+    bool hasNext() const {
+        return idx < size;
+    }
 
-	template <typename H>
+    template <typename H>
     uint32_t next(H& hashBitStream) {
-		const uint32_t k = idx + getUniformLemire(size - idx, hashBitStream);
+        const uint32_t k = idx + getUniformLemire(size - idx, hashBitStream);
         auto& permutationAndVersionK = permutationAndVersion[k];
         const auto& permutationAndVersionIdx = permutationAndVersion[idx];
         const uint32_t result = (permutationAndVersionK.second != versionCounter)?k:permutationAndVersionK.first;
         const uint32_t x = (permutationAndVersionIdx.second != versionCounter)?idx:permutationAndVersionIdx.first;
-		permutationAndVersionK = std::make_pair(x, versionCounter);
-		idx += 1;
+        permutationAndVersionK = std::make_pair(x, versionCounter);
+        idx += 1;
         return result;
-	}
+    }
 
     // must be called first before iterating over a new permutation using next-method
-	void reset(uint32_t size) {
+    void reset(uint32_t size) {
         this->size = size;
-		idx = 0;
+        idx = 0;
         if (allocated_size < size) {
             permutationAndVersion.reset(new std::pair<uint32_t, uint32_t>[size]);
             allocated_size = size;
@@ -321,9 +321,9 @@ public:
         }
         if (versionCounter == 0) {
             std::fill_n(permutationAndVersion.get(), allocated_size, std::make_pair(0,0));
-		}
-		versionCounter += 1;
-	}
+        }
+        versionCounter += 1;
+    }
 };
 
 inline thread_local uint32_t PermutationStream::size = 0;

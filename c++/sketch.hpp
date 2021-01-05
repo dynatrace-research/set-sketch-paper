@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -92,13 +92,13 @@ public:
 
     double getBeta() const {return (difference2Cardinality > 0)?difference2Cardinality / (difference1Cardinality + difference2Cardinality + intersectionCardinality):0.;}
 
-    JointEstimationResult(double difference1Cardinality, double difference2Cardinality, double intersectionCardinality) : 
+    JointEstimationResult(double difference1Cardinality, double difference2Cardinality, double intersectionCardinality) :
         difference1Cardinality(difference1Cardinality),
         difference2Cardinality(difference2Cardinality),
         intersectionCardinality(intersectionCardinality) {
             assert(difference1Cardinality >= 0);
             assert(difference2Cardinality >= 0);
-            assert(intersectionCardinality >= 0);        
+            assert(intersectionCardinality >= 0);
     }
 };
 
@@ -133,7 +133,7 @@ class CardinalityEstimator {
         double onembmxBaseInversePowers = onembmx * baseInversePowers[l];
 
         double numerator = baseInversePowers[l] * bmx * basem1p3 * (b1mxm1 - onembmxBaseInversePowersM1);
-        
+
         double hh1 = b1mxm1 + onembmxBaseInversePowers;
         double hh2 = b1mxm1 + onembmxBaseInversePowersM1;
         double hh3 = b1mxm1 + onembmxBaseInversePowersM1 * base;
@@ -151,12 +151,12 @@ class CardinalityEstimator {
     }
 
     double solveJointMLEquation (
-        const uint64_t numEqual, 
-        const std::vector<std::pair<uint64_t, uint64_t>>& delta1Larger2, 
+        const uint64_t numEqual,
+        const std::vector<std::pair<uint64_t, uint64_t>>& delta1Larger2,
         const std::vector<std::pair<uint64_t, uint64_t>>& delta2Larger1) const {
         if (delta1Larger2.empty()) {
             return 0;
-        } else {    
+        } else {
             std::pair<double, double> intAlphaPrime = boost::math::tools::bisect(
                 [&](double alpha){
                     if (alpha <= 0) return -std::numeric_limits<double>::infinity();
@@ -188,10 +188,10 @@ class CardinalityEstimator {
                         }
                         return sum2 - sum1;
                     }
-                }, 
-                0., 
-                1., 
-                [](double a, double b){return std::abs(a-b) <= 0;});       
+                },
+                0.,
+                1.,
+                [](double a, double b){return std::abs(a-b) <= 0;});
 
             return (intAlphaPrime.first + intAlphaPrime.second) * 0.5;
         }
@@ -202,7 +202,7 @@ class CardinalityEstimator {
         assert(x >= 0);
         assert(x <= 1);
 
-        if (x == 0.) return 0;    
+        if (x == 0.) return 0;
         if (x == 1.) return std::numeric_limits<double>::infinity();
 
         double sum = 0;
@@ -226,7 +226,7 @@ class CardinalityEstimator {
         double xbmk = x;
         double bmk = baseInverse;
         double oldSum;
-        
+
         do {
             oldSum = sum;
             xbmk = std::pow(xbmk, baseInverse);
@@ -259,18 +259,18 @@ class CardinalityEstimator {
             return JointEstimationResult(unionCardinality * alpha, unionCardinality * beta, unionCardinality * z);
         } else {
             // intersection estimate = 0, assuming sketches represent disjoint sets
-            return JointEstimationResult(card1, card2, 0);    
+            return JointEstimationResult(card1, card2, 0);
         }
     }
 
 public:
 
     CardinalityEstimator(uint64_t q, double a, double base, uint64_t numRegisters):
-        q(q), 
+        q(q),
         a(a),
         base(base),
-        baseInverse(1./base), 
-        numRegisters(numRegisters), 
+        baseInverse(1./base),
+        numRegisters(numRegisters),
         logBaseDivBaseMinus1(log1pDivX(base-1)),
         factor(numRegisters/(base*logBaseDivBaseMinus1*a)),
         tauValues(numRegisters+1),
@@ -289,7 +289,7 @@ public:
         }
         for(uint32_t i = 0; i <= numRegisters; ++i) {
             tauValues[i] = numRegisters * baseInversePowers[q+1]*tau(static_cast<double>(numRegisters - i) / static_cast<double>(numRegisters));
-            sigmaValues[i] = numRegisters * sigma(static_cast<double>(i) / static_cast<double>(numRegisters)); 
+            sigmaValues[i] = numRegisters * sigma(static_cast<double>(i) / static_cast<double>(numRegisters));
         }
    }
 
@@ -303,7 +303,7 @@ public:
                 sum += tauValues[valueFrequencyPair.second];
             } else {
                 sum += valueFrequencyPair.second * baseInversePowers[valueFrequencyPair.first];
-            }       
+            }
         }
         return factor / sum;
     }
@@ -314,11 +314,11 @@ public:
         double z = 0;
         uint64_t count0 = 0;
         for(auto valueFrequencyPair : registerHistogram) {
-                
+
             if(!useRangeCorrection || valueFrequencyPair.first <= q) {
                 if(useRangeCorrection && valueFrequencyPair.first == 0) {
                     count0 = valueFrequencyPair.second;
-                    if (count0 == numRegisters) return 0;   
+                    if (count0 == numRegisters) return 0;
                 }
                 z += valueFrequencyPair.second * baseInversePowers[valueFrequencyPair.first];
             } else {
@@ -344,9 +344,9 @@ public:
                     }
                 }
                 return y - n * z;
-            }, 
-            cardinalityLowerBound, 
-            cardinalityUpperBound, 
+            },
+            cardinalityLowerBound,
+            cardinalityUpperBound,
             [](double a, double b) {return std::abs(b - a) <= 1e-9 * std::max(a, b);}, maxIterations);
         return (result.first + result.second) * 0.5;
     }
@@ -377,7 +377,7 @@ public:
 
     template<typename S>
     JointEstimationResult estimateJointSimple(const S& state1, const S& state2, bool useRangeCorrection) const {
-       
+
         uint64_t numRegisters1Less2 = 0;
         uint64_t numRegisters1Greater2 = 0;
         bool hasEqualRegistersWithExtremeValues = false;
@@ -425,7 +425,7 @@ public:
                 numEqual += 1;
             }
         }
-        
+
         if(useRangeCorrection && registersWithExtremeValues) {
             // fall back to inclusion-exclusion principle
             return estimateJointInclExcl(state1, state2, useRangeCorrection);
@@ -467,8 +467,8 @@ class Mapping {
     const uint64_t searchIncrement;
     static constexpr double skipProbability = 0.5;
 public:
-    Mapping(double base, uint64_t q) : 
-        baseInversePowers(q+1), 
+    Mapping(double base, uint64_t q) :
+        baseInversePowers(q+1),
         searchIncrement(static_cast<uint64_t>(std::floor(std::max(1., -std::log(skipProbability) / std::log(base))))) {
         for(uint64_t i = 0; i <= q; ++i) baseInversePowers[i] = std::pow(base, -static_cast<double>(i));
         assert(searchIncrement > 0);
@@ -512,7 +512,7 @@ public:
 };
 
 
-template<typename R> 
+template<typename R>
 class RegistersWithHistogram{
     std::vector<R> registerValues;
     std::vector<uint32_t> histogram;
@@ -525,15 +525,15 @@ public:
     RegistersWithHistogram(const C& config) :
         registerValues(config.getNumRegisters(), 0),
         histogram(config.getQ() + 2, 0),
-        minRegisterValue(0) 
-    {     
+        minRegisterValue(0)
+    {
         assert(static_cast<uint64_t>(config.getQ()) + 1 <= std::numeric_limits<R>::max());
         histogram[0] = config.getNumRegisters();
     }
 
     // all register values are equal to or greater than the returned lower bound
     uint32_t getRegisterValueLowerBound() const {
-        return minRegisterValue;    
+        return minRegisterValue;
     }
 
     void update(uint32_t registerIdx, R newRegisterValue) {
@@ -571,7 +571,7 @@ public:
 };
 
 /*
-template<typename R> 
+template<typename R>
 class RegistersWithLowerBound1{
     std::vector<R> registerValues;
     R limitRegisterValue;
@@ -593,7 +593,7 @@ public:
 
     // all register values are equal to or greater than the returned lower bound
     uint32_t getRegisterValueLowerBound() const {
-        return registerValueLowerBound;    
+        return registerValueLowerBound;
     }
 
     void update(uint32_t registerIdx, R newRegisterValue) {
@@ -637,7 +637,7 @@ public:
 };
 */
 
-template<typename R> 
+template<typename R>
 class RegistersWithLowerBound{
     std::vector<R> registerValues;
     R limitRegisterValue;
@@ -660,7 +660,7 @@ public:
 
     // all register values are equal to or greater than the returned lower bound
     uint32_t getRegisterValueLowerBound() const {
-        return registerValueLowerBound;    
+        return registerValueLowerBound;
     }
 
     void update(uint32_t registerIdx, R newRegisterValue) {
@@ -718,8 +718,8 @@ private:
     const Mapping mapping;
 public:
 
-    GeneralizedHyperLogLogConfig(uint32_t numRegisters, double base, uint64_t q, uint64_t seed) : 
-            numRegisters(numRegisters), 
+    GeneralizedHyperLogLogConfig(uint32_t numRegisters, double base, uint64_t q, uint64_t seed) :
+            numRegisters(numRegisters),
             base(base),
             seed(seed),
             q(q),
@@ -780,13 +780,13 @@ private:
     const CardinalityEstimator cardinalityEstimator;
 public:
 
-    HyperLogLogConfig(uint64_t p, uint64_t q) : 
-            numRegisters(UINT32_C(1) << p), 
+    HyperLogLogConfig(uint64_t p, uint64_t q) :
+            numRegisters(UINT32_C(1) << p),
             p(p),
             q(q),
             a(1./numRegisters),
             cardinalityEstimator(q, a, 2., numRegisters) {
-        
+
         assert(p + q <= 64);
         assert(numRegisters > 0);
         assert(std::numeric_limits<RegValueType>::max() > q);
@@ -822,7 +822,7 @@ public:
 
 };
 
-template<typename C> 
+template<typename C>
 class BaseSketch {
 protected:
     const C& config;
@@ -878,7 +878,7 @@ std::pair<double,double> estimateJaccardSimilarityUsingEqualRegisters(const S& s
 }
 
 
-template<typename C> 
+template<typename C>
 class GeneralizedHyperLogLog : public BaseSketch<C> {
 public:
 
@@ -889,13 +889,13 @@ public:
         double x = getUniformDouble(bitstream);
         auto kLow = this->state.getRegisterValueLowerBound();
         auto k = this->config.getMapping().map(kLow, x);
-        if (k == kLow) return;        
+        if (k == kLow) return;
         uint32_t registerIdx = getUniformLemire(this->config.getNumRegisters(), bitstream);
         this->state.update(registerIdx, k);
     }
 };
 
-template<typename C> 
+template<typename C>
 class HyperLogLog : public BaseSketch<C> {
 public:
 
@@ -915,7 +915,7 @@ public:
     }
 };
 
- 
+
 template<typename S>
 class SetSketchConfig1 {
 public:
@@ -934,8 +934,8 @@ private:
     const Mapping mapping;
 public:
 
-    SetSketchConfig1(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) : 
-            numRegisters(numRegisters), 
+    SetSketchConfig1(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) :
+            numRegisters(numRegisters),
             base(base),
             seed(seed),
             q(q),
@@ -1005,7 +1005,7 @@ public:
             x += ziggurat::getExponential(bitstream) * this->config.getFactor(i);
             auto kLow = this->state.getRegisterValueLowerBound();
             auto k = this->config.getMapping().map(kLow, x);
-            if (k == kLow) return;      
+            if (k == kLow) return;
             uint32_t registerIdx = permutationStream.next(bitstream);
             this->state.update(registerIdx, k);
         }
@@ -1032,8 +1032,8 @@ private:
     const Mapping mapping;
 public:
 
-    SetSketchConfig2(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) : 
-            numRegisters(numRegisters), 
+    SetSketchConfig2(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) :
+            numRegisters(numRegisters),
             base(base),
             seed(seed),
             q(q),
@@ -1047,9 +1047,9 @@ public:
         assert(numRegisters > 0);
         assert(base > 1);
         assert(std::numeric_limits<RegValueType>::max() > q);
-        
+
         for(uint32_t i = 0; i < numRegisters - 1; ++i) truncatedExponentialDistributions[i] = TruncatedExponentialDistribution(std::log1p(1./static_cast<double>(numRegisters - i - 1)));
-        for(uint32_t i = 0; i < numRegisters; ++i) gammaTimesAInv[i] = 
+        for(uint32_t i = 0; i < numRegisters; ++i) gammaTimesAInv[i] =
             std::log1p(static_cast<double>(i)/static_cast<double>(numRegisters - i)) * aInv;
     }
 
@@ -1114,7 +1114,7 @@ public:
         permutationStream.reset(this->config.getNumRegisters());
         const auto& c = this->config;
         const uint32_t m = c.getNumRegisters();
-        
+
         for(uint32_t i = 0; i < m; ++i) {
             auto kLow = this->state.getRegisterValueLowerBound();
             if (!this->config.getMapping().isRelevant(kLow, c.getGammaTimesAInv(i))) break;
@@ -1125,7 +1125,7 @@ public:
                 x = c.getGammaTimesAInv(m-1) + c.getAInv() * ziggurat::getExponential(bitstream);
             }
             auto k = this->config.getMapping().map(kLow, x);
-            if (k == kLow) return;      
+            if (k == kLow) return;
             uint32_t registerIdx = permutationStream.next(bitstream);
             this->state.update(registerIdx, k);
         }

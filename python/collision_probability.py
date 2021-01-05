@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+# Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 #
 # This software and associated documentation files (the "Software")
 # are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 # non-commercial purposes only – the Software may not be used to
 # process live data or distributed, sublicensed, modified and/or
 # sold either alone or as part of or in combination with any other
-# software.  
+# software.
 #
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 # OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 # HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -95,7 +95,7 @@ def maxMseUpperBoundEstimate(j,m,b):
         result = max(result, theoreticalMseUpperBoundEstimator(j, p, m, b))
     return result
 
-def empiricalMseUpperBoundEstimator(j, p, m, b):  
+def empiricalMseUpperBoundEstimator(j, p, m, b):
     mse = 0
     for c in range(0,m+1):
         prob = binom.pmf(c,m,p)
@@ -154,9 +154,9 @@ def makeMSEUpperboundEstimationChart():
         leg_lines.append(matplotlib.lines.Line2D([0], [0], lw=1, color=colors[k] ))
         leg_labels.append("$b=" + str(bvals[k]) + "$")
     fig.legend(leg_lines, leg_labels, loc="lower center", bbox_to_anchor=(0.5, -0.02), ncol=len(leg_labels))
-    
+
     fig.subplots_adjust(left=0.082, bottom=0.36, right=0.985, top=0.925, hspace=0.1, wspace=0.08)
-    
+
     axs[0].set_ylabel(r"$\text{RMSE}/\sqrt{J(1-J)/m}$")
 
     # ax.plot(xVals, [(pow(base, x)-1)/(base -1)-x for x in xVals], label="upper bound")
@@ -186,7 +186,7 @@ def makeCollisionProbabilityChart():
 
 
     axs[0].set_ylabel("$\Pr(K_{Ai}=K_{Bi})$")
-    
+
     fig.subplots_adjust(left=0.08, bottom=0.225, right=0.985, top=0.91, hspace=0.1, wspace=0.1)
 
     fig.savefig('paper/collision_probability.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})

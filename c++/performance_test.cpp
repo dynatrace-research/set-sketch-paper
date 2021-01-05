@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -50,20 +50,20 @@ void test(uint64_t seed, C&& config, const vector<uint64_t>& cardinalities) {
     const uint64_t numCycles = 1000; // takes approx. 210 min
 
     uint64_t state = seed;
-    
+
     vector<double> recordingTimeSeconds(cardinalities.size(), 0);
     vector<double> estimates(cardinalities.size(), 0);
 
     for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
         const uint64_t cardinality = cardinalities[cardinalityIdx];
-        auto beginMeasurement = chrono::high_resolution_clock::now();    
+        auto beginMeasurement = chrono::high_resolution_clock::now();
         double e = 0;
         for(uint64_t cycleCounter = 0; cycleCounter < numCycles; ++cycleCounter) {
             auto sketch = config.create();
             for(uint64_t j = 0; j < cardinality; ++j) sketch.add(wyrand(&state));
             e += sketch.estimateCardinalitySimple(false);
         }
-        auto endMeasurement = chrono::high_resolution_clock::now();    
+        auto endMeasurement = chrono::high_resolution_clock::now();
 
         recordingTimeSeconds[cardinalityIdx] = static_cast<double>(chrono::duration_cast<chrono::nanoseconds>(endMeasurement-beginMeasurement).count()) / (1e9 * numCycles);
         estimates[cardinalityIdx] = e / numCycles;
@@ -89,7 +89,7 @@ public:
 
     double estimateCardinalitySimple(bool b) const {
         return state;
-    }   
+    }
 };
 
 

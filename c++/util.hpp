@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -34,7 +34,7 @@ template<typename F>
 double calculateMSE(const F& estimatedValues, uint64_t size, double trueValue) {
     double squaredErrorSum = 0;
     for(uint64_t i = 0; i < size; ++i) {
-        squaredErrorSum += pow(estimatedValues(i) - trueValue, 2);  
+        squaredErrorSum += pow(estimatedValues(i) - trueValue, 2);
     }
     double result = squaredErrorSum / size;
     return result;
@@ -48,9 +48,9 @@ template<typename F>
 double calculateMean(const F& estimatedValues, uint64_t size) {
     double sum = 0;
     for(uint64_t i = 0; i < size; ++i) {
-        sum += estimatedValues(i);  
+        sum += estimatedValues(i);
     }
-    
+
     double result = sum / size;
     return result;
 }

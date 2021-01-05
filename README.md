@@ -24,7 +24,7 @@ MinHash and HyperLogLog are sketching algorithms that have become indispensable 
    ```
    gradle runCardinalityTest runJointTest runPerformanceTest
    ```
-6. Generate all figures: 
+6. Generate all figures:
    ```
    gradle pdfFigures
    ```

@@ -1,4 +1,4 @@
-# Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+# Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 #
 # This software and associated documentation files (the "Software")
 # are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 # non-commercial purposes only – the Software may not be used to
 # process live data or distributed, sublicensed, modified and/or
 # sold either alone or as part of or in combination with any other
-# software.  
+# software.
 #
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 # OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 # HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -160,9 +160,9 @@ def make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_va
     for base_value_idx in range(0, len(base_values)):
         inner_grid = outer_grid[base_value_idx,0].subgridspec(ncols=5, nrows=len(union_sizes), wspace=0.04, hspace=0.07)
         inner_grids.append(inner_grid)
-    
+
     axs = []
-    for base_value_idx in range(0, len(base_values)):   
+    for base_value_idx in range(0, len(base_values)):
         axs1 = []
         axs.append(axs1)
         for union_size_idx in range(0, len(union_sizes)):
@@ -199,18 +199,18 @@ def make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_va
 
                 # hide tick labels
                 if base_value_idx != len(base_values)-1 or union_size_idx != len(union_sizes)-1:
-                    ax.tick_params(labelbottom=False)    
+                    ax.tick_params(labelbottom=False)
                 if i!=0:
-                    ax.tick_params(labelleft=False)    
+                    ax.tick_params(labelleft=False)
 
                 # right labels
                 if i==0:
                     ax.set_ylabel("relative RMSE")
 
-                # left labels    
+                # left labels
                 if i == 4:
                     ax.text(x=1.04, y=0.5, rotation=270, s="$\mu =" + format_union_size(union_sizes[union_size_idx]) + "$", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
-                    
+
                     if union_size_idx==0:
                         ax.text(x=1.12, y=0.0, rotation=270, s="$b=" + str(base_values[base_value_idx]) + "$", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
 
@@ -218,7 +218,7 @@ def make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_va
                 if base_value_idx == len(base_values)-1 and union_size_idx == len(union_sizes)-1:
                     ax.set_xlabel(r"$\alpha/\beta$")
 
-    
+
     for base_value_idx in range(0, len(base_values)):
 
         for union_size_idx in range(0, len(union_sizes)):
@@ -263,7 +263,7 @@ def make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_va
     fig.legend(leg_lines, leg_labels, loc="lower center", ncol=len(leg_labels), bbox_to_anchor=(0.5,-0.005))
 
     outfile = "joint(" + sketch_name + ").pdf"
-    
+
     fig.subplots_adjust(left=0.041, bottom=0.09, right=0.972, top=0.975)
 
     fig.savefig('paper/' + outfile, format='pdf', dpi=1200, metadata={'creationDate': None} )

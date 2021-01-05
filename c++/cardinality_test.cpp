@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -46,7 +46,7 @@ template<typename C>
 void test(uint64_t seed, const C& config) {
 
     const uint64_t numExamples = 1000; // takes approx. 1h 30min
-    
+
     const vector<uint64_t> cardinalities = getCardinalities(10000000, 0.01);
 
     const uint64_t seedSize = 256;
@@ -94,13 +94,13 @@ void test(uint64_t seed, const C& config) {
         double mseML = calculateMSE(mlEstimates[cardinalityIdx], trueCardinality);
         double meanMLCorrected = calculateMean(mlCorrectedEstimates[cardinalityIdx]);
         double mseMLCorrected = calculateMSE(mlCorrectedEstimates[cardinalityIdx], trueCardinality);
-        
-        f << setprecision(numeric_limits< double >::max_digits10) << scientific << 
-            trueCardinality << ";" << 
-            meanSimple << "; " << mseSimple << "; " << 
-            meanSimpleCorrected << "; " << mseSimpleCorrected << "; " << 
-            meanML << "; " << mseML << "; " << 
-            meanMLCorrected << "; " << mseMLCorrected << "; " << 
+
+        f << setprecision(numeric_limits< double >::max_digits10) << scientific <<
+            trueCardinality << ";" <<
+            meanSimple << "; " << mseSimple << "; " <<
+            meanSimpleCorrected << "; " << mseSimpleCorrected << "; " <<
+            meanML << "; " << mseML << "; " <<
+            meanMLCorrected << "; " << mseMLCorrected << "; " <<
             endl;
     }
 

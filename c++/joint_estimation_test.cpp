@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.  
+// Copyright (c) 2012-2021 Dynatrace LLC. All rights reserved.
 //
 // This software and associated documentation files (the "Software")
 // are being made available by Dynatrace LLC for purposes of
@@ -9,13 +9,13 @@
 // non-commercial purposes only – the Software may not be used to
 // process live data or distributed, sublicensed, modified and/or
 // sold either alone or as part of or in combination with any other
-// software.  
+// software.
 //
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 // OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 // NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
 // HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
@@ -57,11 +57,11 @@ static vector<tuple<uint64_t, uint64_t, uint64_t>> getCardinalityTuples() {
     set<tuple<uint64_t, uint64_t, uint64_t>> cardinalityTuples;
 
     for(uint64_t intersection : intersections1) {
-        
+
         double ratio = 1;
         while(true) {
-            
-            uint64_t diff1 = static_cast<uint64_t>(floor((unionCardinality1 - intersection) / (1 + 1./ratio))); 
+
+            uint64_t diff1 = static_cast<uint64_t>(floor((unionCardinality1 - intersection) / (1 + 1./ratio)));
             uint64_t diff2 = unionCardinality1 - intersection - diff1;
 
             assert(diff1 >= 0);
@@ -78,11 +78,11 @@ static vector<tuple<uint64_t, uint64_t, uint64_t>> getCardinalityTuples() {
     }
 
     for(uint64_t intersection : intersections2) {
-        
+
         double ratio = 1;
         while(true) {
-            
-            uint64_t diff1 = static_cast<uint64_t>(floor((unionCardinality2 - intersection) / (1 + 1./ratio))); 
+
+            uint64_t diff1 = static_cast<uint64_t>(floor((unionCardinality2 - intersection) / (1 + 1./ratio)));
             uint64_t diff2 = unionCardinality2 - intersection - diff1;
 
             assert(diff1 >= 0);
@@ -108,7 +108,7 @@ static S composeSketch(const C& config, uint64_t trueCardinality, const vector<S
         if ((trueCardinality & (UINT64_C(1) << k)) != UINT64_C(0)) {
             assert(static_cast<uint64_t>(k) < sketches.size());
             result.merge(sketches[k]);
-        }   
+        }
     }
     return result;
 }
@@ -120,7 +120,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
 
     const uint64_t numExamples = 1000; // takes approx. 1h
 
-    typedef typename C::SketchType sketch_type; 
+    typedef typename C::SketchType sketch_type;
 
     mt19937 initialRng(seed);
     vector<uint32_t> seeds(numExamples * seedSize);
@@ -178,7 +178,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         }
         auto endGeneration = chrono::high_resolution_clock::now();
         auto generationNanoSeconds = chrono::duration_cast<chrono::nanoseconds>(endGeneration-beginGeneration).count();
-        
+
         #pragma omp atomic
         nanoSecondsForGeneration += generationNanoSeconds;
 
@@ -190,7 +190,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
             uint64_t trueCardinalityA = get<0>(cardinalityTuple);
             uint64_t trueCardinalityB = get<1>(cardinalityTuple);
             uint64_t trueCardinalityX = get<2>(cardinalityTuple);
-            
+
             sketch_type sketch1 = composeSketch(config, trueCardinalityA, sketchesA);
             sketch_type sketch2 = composeSketch(config, trueCardinalityB, sketchesB);
             sketch_type sketchX = composeSketch(config, trueCardinalityX, sketchesX);
@@ -203,7 +203,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         }
         auto endEstimation = chrono::high_resolution_clock::now();
         auto estimationNanoSeconds = chrono::duration_cast<chrono::nanoseconds>(endEstimation-beginEstimation).count();
-        
+
         #pragma omp atomic
         nanoSecondsForEstimation += estimationNanoSeconds;
     }
@@ -322,11 +322,11 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
     for (uint64_t j = 0; j < cardinalityTuples.size(); ++j) {
 
         const auto& cardinalityTuple = cardinalityTuples[j];
-        
+
         uint64_t trueCardinalityA = get<0>(cardinalityTuple);
         uint64_t trueCardinalityB = get<1>(cardinalityTuple);
         uint64_t trueCardinalityX = get<2>(cardinalityTuple);
-        
+
         JointEstimationResult trueJoint(trueCardinalityA, trueCardinalityB, trueCardinalityX);
 
         f << trueJoint.getDifference1() << ";";
@@ -354,7 +354,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getAlpha();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getBeta();}, numExamples) << ";";
-        
+
         f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
@@ -380,7 +380,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getAlpha();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getBeta();}, numExamples) << ";";
-        
+
         f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
@@ -406,7 +406,7 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         f << calculateMean([&](uint64_t idx){return estJointInclExcl[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointInclExcl[idx][j].getAlpha();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointInclExcl[idx][j].getBeta();}, numExamples) << ";";
-    
+
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
@@ -419,14 +419,14 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJointInclExcl[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
-        
+
         f << calculateMean([&](uint64_t idx){return estJaccardColl[idx][j].first;}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJaccardColl[idx][j].second;}, numExamples) << ";";
         f << calculateMSE([&](uint64_t idx){return estJaccardColl[idx][j].first;}, numExamples, trueJoint.getJaccard()) << ";";
         f << calculateMSE([&](uint64_t idx){return estJaccardColl[idx][j].second;}, numExamples, trueJoint.getJaccard()) << ";";
 
         f << endl;
-        
+
     }
 
     f.close();
