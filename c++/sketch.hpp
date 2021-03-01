@@ -35,6 +35,7 @@
 #include <cmath>
 
 #include <boost/math/tools/roots.hpp>
+#include <boost/math/tools/minima.hpp>
 
 #include "bitstream_random.hpp"
 
@@ -376,7 +377,7 @@ public:
     }
 
     template<typename S>
-    JointEstimationResult estimateJointSimple(const S& state1, const S& state2, bool useRangeCorrection) const {
+    JointEstimationResult estimateJointSimpleDeprecated(const S& state1, const S& state2, bool useRangeCorrection) const {
 
         uint64_t numRegisters1Less2 = 0;
         uint64_t numRegisters1Greater2 = 0;
@@ -407,7 +408,7 @@ public:
     }
 
     template<typename S>
-    JointEstimationResult estimateJointML(const S& state1, const S& state2, bool useRangeCorrection) const {
+    JointEstimationResult estimateJointMLDeprecated(const S& state1, const S& state2, bool useRangeCorrection) const {
 
         uint64_t numEqual = 0;
         std::vector<uint64_t> deltas1Larger2Raw;
@@ -439,6 +440,86 @@ public:
 
         return calculateJointResult(state1, state2, alphaPrime, betaPrime, useRangeCorrection);
 
+    }
+
+    // returns estimated jaccard similarity
+    double solveJointMLEquationNew (
+        const uint64_t numRegisters1Less2,
+        const uint64_t numRegisters1Greater2,
+        const uint64_t numEqual,
+        const double card1,
+        const double card2) const {
+
+        if (card1 == 0. && card2 == 0.) return 0.;
+
+        const double z = (1. - baseInverse) / (card1 + card2);
+
+        const double domainMin = 0;
+        const double domainMax = (card1 >= card2) ? card2/card1 : card1/card2;
+
+        std::pair<double, double> r = boost::math::tools::brent_find_minima(
+            [&](double j) {
+
+                double log1px1 = (numEqual > 0 || numRegisters1Greater2 > 0) ? logBaseInverse * std::log1p((card2 * j - card1) * z) : 0.;
+                double log1px2 = (numEqual > 0 || numRegisters1Less2 > 0) ? logBaseInverse * std::log1p((card1 * j - card2) * z) : 0.;
+
+                double ret = 0;
+                if (numEqual > 0) ret += numEqual * std::log1p(log1px1 + log1px2);
+                if (numRegisters1Greater2 > 0) ret += numRegisters1Greater2 * std::log(-log1px1);
+                if (numRegisters1Less2 > 0) ret += numRegisters1Less2 * std::log(-log1px2);
+
+                if(std::isnan(ret)) { // can happen due to numerical inaccuracies at the domain boundary,
+                                      // set to infinity to ensure that minimization can proceed in this case
+                    return std::numeric_limits<double>::infinity();
+                }
+                return -ret;
+            }, 
+            domainMin, 
+            domainMax, 
+            std::numeric_limits<double>::digits); // use large enough value to get best possible result,
+                                                  // see boost documentation of brent_find_minima
+        return r.first;
+    }
+
+    template<typename S>
+    JointEstimationResult estimateJointNew(const S& state1, const S& state2, bool useRangeCorrection) const {
+
+        uint64_t numRegisters1Less2 = 0;
+        uint64_t numRegisters1Greater2 = 0;
+        bool hasEqualRegistersWithExtremeValues = false;
+        for(uint32_t idx = 0; idx < numRegisters; ++idx) {
+            auto val1 = state1.getRegisterValue(idx);
+            auto val2 = state2.getRegisterValue(idx);
+            assert(val1 <= q + 1);
+            assert(val2 <= q + 1);
+
+            if (val1 < val2) {
+                numRegisters1Less2 += 1;
+            }
+            else if (val1 > val2) {
+                numRegisters1Greater2 += 1;
+            } else {
+                if (val1 == 0 || val1 == q + 1) hasEqualRegistersWithExtremeValues = true;
+            }
+        }
+
+        if(useRangeCorrection && hasEqualRegistersWithExtremeValues) {
+            // fall back to inclusion-exclusion principle
+            return estimateJointInclExcl(state1, state2, useRangeCorrection);
+        }
+
+        const double card1 = estimateCardinalitySimple(state1.getHistogram(), useRangeCorrection);
+        const double card2 = estimateCardinalitySimple(state2.getHistogram(), useRangeCorrection);
+
+        const uint64_t numEqual = numRegisters - numRegisters1Less2 - numRegisters1Greater2;
+        
+        const double estimatedJaccard = solveJointMLEquationNew(numRegisters1Less2, numRegisters1Greater2, numEqual, card1, card2);
+        const double y = 1. / (1 + estimatedJaccard);
+        const double difference1Cardinality = std::max(0., card1 - card2*estimatedJaccard) * y;
+        const double difference2Cardinality = std::max(0., card2 - card1*estimatedJaccard) * y;
+        const double intersectionCardinality = (card1 + card2) * estimatedJaccard * y;
+
+        return JointEstimationResult(difference1Cardinality, difference2Cardinality, intersectionCardinality);
     }
 
     template<typename S>
@@ -711,17 +792,15 @@ public:
 private:
     const uint32_t numRegisters;
     const double base;
-    const uint64_t seed;
     const uint64_t q;
     const double a;
     const CardinalityEstimator cardinalityEstimator;
     const Mapping mapping;
 public:
 
-    GeneralizedHyperLogLogConfig(uint32_t numRegisters, double base, uint64_t q, uint64_t seed) :
+    GeneralizedHyperLogLogConfig(uint32_t numRegisters, double base, uint64_t q) :
             numRegisters(numRegisters),
             base(base),
-            seed(seed),
             q(q),
             a(1./numRegisters),
             cardinalityEstimator(q, 1. / numRegisters, base, numRegisters),
@@ -735,14 +814,13 @@ public:
     bool operator==(const GeneralizedHyperLogLogConfig& config) const {
         if (numRegisters != config.numRegisters) return false;
         if (base != config.base) return false;
-        if (seed != config.seed) return false;
         if (q != config.q) return false;
         return true;
     }
 
     uint32_t getNumRegisters() const {return numRegisters;}
 
-    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x, seed);}
+    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x);}
 
     double getBase() const {return base;}
 
@@ -755,8 +833,6 @@ public:
     GeneralizedHyperLogLog<GeneralizedHyperLogLogConfig<S>> create() const {return GeneralizedHyperLogLog(*this);}
 
     std::string getName() const {return "GeneralizedHyperLogLog";}
-
-    uint64_t getSeed() const {return seed;}
 
     const Mapping& getMapping() const {return mapping;}
 
@@ -854,15 +930,21 @@ public:
 };
 
 template<typename S>
-JointEstimationResult estimateJointML(const S& sketch1, const S& sketch2, bool useRangeCorrection) {
+JointEstimationResult estimateJointMLDeprecated(const S& sketch1, const S& sketch2, bool useRangeCorrection) {
     assert(sketch1.getConfig() == sketch2.getConfig());
-    return sketch1.getConfig().getEstimator().estimateJointML(sketch1.getState(), sketch2.getState(), useRangeCorrection);
+    return sketch1.getConfig().getEstimator().estimateJointMLDeprecated(sketch1.getState(), sketch2.getState(), useRangeCorrection);
 }
 
 template<typename S>
-JointEstimationResult estimateJointSimple(const S& sketch1, const S& sketch2, bool useRangeCorrection) {
+JointEstimationResult estimateJointSimpleDeprecated(const S& sketch1, const S& sketch2, bool useRangeCorrection) {
     assert(sketch1.getConfig() == sketch2.getConfig());
-    return sketch1.getConfig().getEstimator().estimateJointSimple(sketch1.getState(), sketch2.getState(), useRangeCorrection);
+    return sketch1.getConfig().getEstimator().estimateJointSimpleDeprecated(sketch1.getState(), sketch2.getState(), useRangeCorrection);
+}
+
+template<typename S>
+JointEstimationResult estimateJointNew(const S& sketch1, const S& sketch2, bool useRangeCorrection) {
+    assert(sketch1.getConfig() == sketch2.getConfig());
+    return sketch1.getConfig().getEstimator().estimateJointNew(sketch1.getState(), sketch2.getState(), useRangeCorrection);
 }
 
 template<typename S>
@@ -915,7 +997,6 @@ public:
     }
 };
 
-
 template<typename S>
 class SetSketchConfig1 {
 public:
@@ -926,7 +1007,6 @@ public:
 private:
     const uint32_t numRegisters;
     double base;
-    const uint64_t seed;
     const uint64_t q;
     const double a;
     const CardinalityEstimator cardinalityEstimator;
@@ -934,10 +1014,9 @@ private:
     const Mapping mapping;
 public:
 
-    SetSketchConfig1(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) :
+    SetSketchConfig1(uint32_t numRegisters, double base, double a, uint64_t q) :
             numRegisters(numRegisters),
             base(base),
-            seed(seed),
             q(q),
             a(a),
             cardinalityEstimator(q, a, base, numRegisters),
@@ -955,14 +1034,13 @@ public:
         if (numRegisters != config.numRegisters) return false;
         if (base != config.base) return false;
         if (a != config.a) return false;
-        if (seed != config.seed) return false;
         if (q != config.q) return false;
         return true;
     }
 
     uint32_t getNumRegisters() const {return numRegisters;}
 
-    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x, seed);}
+    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x);}
 
     double getBase() const {return base;}
 
@@ -977,8 +1055,6 @@ public:
     SetSketch1<SetSketchConfig1<S>> create() const {return SetSketch1(*this);}
 
     std::string getName() const {return "SetSketch1";}
-
-    uint64_t getSeed() const {return seed;}
 
     const Mapping& getMapping() const {return mapping;}
 
@@ -1022,7 +1098,6 @@ public:
 private:
     const uint32_t numRegisters;
     const double base;
-    const uint64_t seed;
     const uint64_t q;
     const double a;
     const CardinalityEstimator cardinalityEstimator;
@@ -1032,10 +1107,9 @@ private:
     const Mapping mapping;
 public:
 
-    SetSketchConfig2(uint32_t numRegisters, double base, double a, uint64_t q, uint64_t seed) :
+    SetSketchConfig2(uint32_t numRegisters, double base, double a, uint64_t q) :
             numRegisters(numRegisters),
             base(base),
-            seed(seed),
             q(q),
             a(a),
             cardinalityEstimator(q, a, base, numRegisters),
@@ -1057,14 +1131,13 @@ public:
         if (numRegisters != config.numRegisters) return false;
         if (base != config.base) return false;
         if (a != config.a) return false;
-        if (seed != config.seed) return false;
         if (q != config.q) return false;
         return true;
     }
 
     uint32_t getNumRegisters() const {return numRegisters; }
 
-    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x, seed);}
+    BitStreamType getBitStream(uint64_t x) const {return BitStreamType(x);}
 
     double getBase() const {return base;}
 
@@ -1087,8 +1160,6 @@ public:
     const CardinalityEstimator& getEstimator() const {return cardinalityEstimator;}
 
     SetSketch2<SetSketchConfig2<S>> create() const {return SetSketch2(*this);}
-
-    uint64_t getSeed() const {return seed;}
 
     std::string getName() const {return "SetSketch2";}
 
@@ -1149,7 +1220,6 @@ void appendInfo(std::ostream& os, const C& config)
     os << "q=" << config.getQ() << ";";
     os << "base=" << std::scientific << std::setprecision(std::numeric_limits< double >::max_digits10) << config.getBase() << ";";
     os << "a=" << std::scientific << std::setprecision(std::numeric_limits< double >::max_digits10) << config.getA() << ";";
-    os << "seed=" << std::hex << std::setfill('0') << std::setw(16) << config.getSeed() << std::dec << ";";
     os.flags( f );
 }
 

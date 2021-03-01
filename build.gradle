@@ -138,72 +138,72 @@ task buildJointEstimationTestExecutable(type: Exec) {
 }
 
 def cardinalityTestResults = [ \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=14662929af74678a;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;seed=01cd2ba5e72869c4;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=ee135ccdbaf83684;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=c2950eb3d4a4c77e;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=d532d9748fd00ce0;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;seed=66f86268110b0bfc;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=82a8545b35daf016;).csv", \
-    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;seed=32ee6041633624f4;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=525738371a6744a3;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=0153b464e5066cab;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=559075ffabc64341;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=9cc92d7fa9393899;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=1b297f07fc96869e;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=c6af5f872e8bb2bc;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=ddcd924a08baac8c;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=2cc151ec0c9f1e7c;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=1592d0e8b64ff10d;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=31d2dc0fbf11f576;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=d6960482253fc240;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=845cbab0654df26a;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=3f0da0e0183cd125;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=106826bc0c793764;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=62fdfc2132af106f;).csv", \
-    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=5ba34df0ff814e7a;).csv"]
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;).csv", \
+    "${dataDir}/cardinality_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/cardinality_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv"]
 
 def performanceTestResults = [ \
     "${dataDir}/performance_test(dummy;).csv",\
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=c45fcbf37f7900da;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;seed=38ed7e2c9017e399;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=e771a67e6a075a79;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=ba731718850df005;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=a35fb5263a6b8b0c;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;seed=bd44696fa13ed2b4;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=1d8f5a77f5bbb902;).csv", \
-    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;seed=ecc818200c3c6ef3;).csv", \
-    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=1024;q=54;base=2.00000000000000000e+00;a=9.76562500000000000e-04;seed=0000000000000000;).csv", \
-    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=16384;q=50;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=0000000000000000;).csv", \
-    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=256;q=56;base=2.00000000000000000e+00;a=3.90625000000000000e-03;seed=0000000000000000;).csv", \
-    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=4096;q=52;base=2.00000000000000000e+00;a=2.44140625000000000e-04;seed=0000000000000000;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=6deaea5dae02750d;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=524c5f4ac61ddad7;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=3d6aac04d1dec8cf;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=c06b311001bd8a92;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=63b031c36fcd348d;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=78461f7915348ba1;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=c02f012f9f81ffd5;).csv", \
-    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=923f3c815254dac0;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=759934cdee109cdd;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=6e3c64196517a9ed;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=80ccde04166e17e6;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=2ea3947092370ade;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=e6a78c5e8aa8a7ac;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=3d7088784ba2c9f9;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=8121ebd56b11d982;).csv", \
-    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=5aec1299c64ec447;).csv"]
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=9.76562500000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=9.76562500000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.90625000000000000e-03;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.90625000000000000e-03;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=2.44140625000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=GeneralizedHyperLogLog;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=2.44140625000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=1024;q=54;base=2.00000000000000000e+00;a=9.76562500000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=16384;q=50;base=2.00000000000000000e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=256;q=56;base=2.00000000000000000e+00;a=3.90625000000000000e-03;).csv", \
+    "${dataDir}/performance_test(name=HyperLogLog;numRegisters=4096;q=52;base=2.00000000000000000e+00;a=2.44140625000000000e-04;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch1;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=1024;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=256;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/performance_test(name=SetSketch2;numRegisters=4096;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv"]
 
 def jointTestResults = [ \
-    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=6.10351562500000000e-05;seed=559075ffabc64341;).csv", \
-    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;seed=ddcd924a08baac8c;).csv", \
-    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;seed=3f0da0e0183cd125;).csv", \
-    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;seed=14662929af74678a;).csv", \
-    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=d532d9748fd00ce0;).csv", \
-    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=82a8545b35daf016;).csv", \
-    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;seed=1b297f07fc96869e;).csv", \
-    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;seed=ee135ccdbaf83684;).csv", \
-    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;seed=525738371a6744a3;).csv"]
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/joint_test(name=GeneralizedHyperLogLog;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=6.10351562500000000e-05;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/joint_test(name=SetSketch1;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=1.19999999999999996e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=254;base=2.00000000000000000e+00;a=3.00000000000000000e+01;).csv", \
+    "${dataDir}/joint_test(name=SetSketch2;numRegisters=16384;q=65534;base=1.00099999999999989e+00;a=3.00000000000000000e+01;).csv"]
 
 task runCardinalityTest(type: Exec) {
     group 'Main'

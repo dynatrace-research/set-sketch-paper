@@ -202,14 +202,7 @@ public:
     WyrandBitStream(WyrandBitStream&& p) = default;
     WyrandBitStream& operator=(WyrandBitStream&&) = default;
 
-    WyrandBitStream(uint64_t value, uint64_t seed) : state(wyhash64(value, seed)), hashBits(0), availableBits(0) {}
-
-    // WyrandBitStream(uint64_t value1, uint64_t value2, uint64_t seed) : hashBits(0), availableBits(0) {
-    //     uint64_t data[2];
-    //     data[0] = value1;
-    //     data[1] = value2;
-    //     state = wyhash(data, 2*sizeof(uint64_t), seed);
-    // }
+    WyrandBitStream(uint64_t value) : state(value), hashBits(0), availableBits(0) {}
 
     bool operator()() {
         assert(availableBits <= 63);

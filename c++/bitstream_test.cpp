@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
 
     uniform_int_distribution<uint8_t> dist(1, 64);
 
-    WyrandBitStream s1(UINT64_C(0xc2881c5d6c802af7), (0x26a2b296e4474346));
-    WyrandBitStream s2(UINT64_C(0xc2881c5d6c802af7), (0x26a2b296e4474346));
+    WyrandBitStream s1(UINT64_C(0xc2881c5d6c802af7));
+    WyrandBitStream s2(UINT64_C(0xc2881c5d6c802af7));
 
     uint64_t numIterations = 1000000;
 

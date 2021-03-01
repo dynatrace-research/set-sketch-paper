@@ -33,6 +33,7 @@
 #include <fstream>
 #include <chrono>
 #include <vector>
+#include <random>
 
 using namespace std;
 
@@ -40,24 +41,24 @@ template<typename V>
 void generateAndWriteRandomNumbers(string fileName, function<V(WyrandBitStream&)> generator) {
     ofstream out(fileName);
 
-    uint64_t seed = UINT64_C(0xa9142ff6f733a101);
+    mt19937_64 seedRng(UINT64_C(0xa9142ff6f733a101));
 
-    uint64_t numOffsets = 64;
-    uint64_t numNumbers = 10000;
+    uint64_t numBitOffsets = 64;
+    uint64_t numNumbers = 100000;
 
     vector<WyrandBitStream> bitStreams;
-    for(uint64_t offset = 0; offset < numOffsets; ++offset) {
-        WyrandBitStream bitStream(offset, seed);
-        for(uint64_t j = 0; j < offset; ++j) {
-            bitStream();
+    for(uint64_t bitOffset = 0; bitOffset < numBitOffsets; ++bitOffset) {
+        WyrandBitStream bitStream(seedRng());
+        for(uint64_t j = 0; j < bitOffset; ++j) {
+            bitStream(); // consume first bitOffset bits
         }
         bitStreams.emplace_back(move(bitStream));
     }
 
-    std::vector<V> values(numNumbers * numOffsets);
+    std::vector<V> values(numNumbers * numBitOffsets);
     chrono::steady_clock::time_point tStart = chrono::steady_clock::now();
     uint64_t counter = 0;
-    for(uint64_t offset = 0; offset < numOffsets; ++offset) {
+    for(uint64_t offset = 0; offset < numBitOffsets; ++offset) {
         WyrandBitStream& bitStream = bitStreams[offset];
         for(uint64_t i = 0; i < numNumbers; ++i) {
             values[counter] = generator(bitStream);

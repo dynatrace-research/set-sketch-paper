@@ -5,5 +5,4 @@ c++/cardinality_test.out
 c++/sketch_generation.out
 c++/joint_estimation_test.out
 c++/performance_test.out
-data/*.txt
 python/__pycache__

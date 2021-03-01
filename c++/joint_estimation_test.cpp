@@ -138,8 +138,9 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
     }
 
     vector<vector<JointEstimationResult>> estJointInclExcl(numExamples);
-    vector<vector<JointEstimationResult>> estJointML(numExamples);
-    vector<vector<JointEstimationResult>> estJointSimple(numExamples);
+    vector<vector<JointEstimationResult>> estJointMLDeprecated(numExamples);
+    vector<vector<JointEstimationResult>> estJointSimpleDeprecated(numExamples);
+    vector<vector<JointEstimationResult>> estJointNew(numExamples);
     vector<vector<pair<double,double>>> estJaccardColl(numExamples);
 
     uint64_t nanoSecondsForGeneration = 0;
@@ -196,8 +197,10 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
             sketch_type sketchX = composeSketch(config, trueCardinalityX, sketchesX);
             sketch_type sketch1X = merge(sketch1, sketchX);
             sketch_type sketch2X = merge(sketch2, sketchX);
-            estJointML[i].emplace_back(estimateJointML(sketch1X, sketch2X, rangeCorrection));
-            estJointSimple[i].emplace_back(estimateJointSimple(sketch1X, sketch2X, rangeCorrection));
+            
+            estJointMLDeprecated[i].emplace_back(estimateJointMLDeprecated(sketch1X, sketch2X, rangeCorrection));
+            estJointNew[i].emplace_back(estimateJointNew(sketch1X, sketch2X, rangeCorrection));
+            estJointSimpleDeprecated[i].emplace_back(estimateJointSimpleDeprecated(sketch1X, sketch2X, rangeCorrection));
             estJointInclExcl[i].emplace_back(estimateJointInclExcl(sketch1X, sketch2X, rangeCorrection));
             estJaccardColl[i].emplace_back(estimateJaccardSimilarityUsingEqualRegisters(sketch1X, sketch2X));
         }
@@ -234,57 +237,83 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
     f << "trueAlpha" << ";";
     f << "trueBeta" << ";";
 
-    f << "mlMeanDifference1" << ";";
-    f << "mlMeanDifference2" << ";";
-    f << "mlMeanIntersection" << ";";
-    f << "mlMean1" << ";";
-    f << "mlMean2" << ";";
-    f << "mlMeanUnion" << ";";
-    f << "mlMeanJaccard" << ";";
-    f << "mlMeanCosine" << ";";
-    f << "mlMeanInclusionCoefficient1" << ";";
-    f << "mlMeanInclusionCoefficient2" << ";";
-    f << "mlMeanAlpha" << ";";
-    f << "mlMeanBeta" << ";";
+    f << "mlDeprecatedMeanDifference1" << ";";
+    f << "mlDeprecatedMeanDifference2" << ";";
+    f << "mlDeprecatedMeanIntersection" << ";";
+    f << "mlDeprecatedMean1" << ";";
+    f << "mlDeprecatedMean2" << ";";
+    f << "mlDeprecatedMeanUnion" << ";";
+    f << "mlDeprecatedMeanJaccard" << ";";
+    f << "mlDeprecatedMeanCosine" << ";";
+    f << "mlDeprecatedMeanInclusionCoefficient1" << ";";
+    f << "mlDeprecatedMeanInclusionCoefficient2" << ";";
+    f << "mlDeprecatedMeanAlpha" << ";";
+    f << "mlDeprecatedMeanBeta" << ";";
 
-    f << "mlMSEDifference1" << ";";
-    f << "mlMSEDifference2" << ";";
-    f << "mlMSEIntersection" << ";";
-    f << "mlMSE1" << ";";
-    f << "mlMSE2" << ";";
-    f << "mlMSEUnion" << ";";
-    f << "mlMSEJaccard" << ";";
-    f << "mlMSECosine" << ";";
-    f << "mlMSEInclusionCoefficient1" << ";";
-    f << "mlMSEInclusionCoefficient2" << ";";
-    f << "mlMSEAlpha" << ";";
-    f << "mlMSEBeta" << ";";
+    f << "mlDeprecatedMSEDifference1" << ";";
+    f << "mlDeprecatedMSEDifference2" << ";";
+    f << "mlDeprecatedMSEIntersection" << ";";
+    f << "mlDeprecatedMSE1" << ";";
+    f << "mlDeprecatedMSE2" << ";";
+    f << "mlDeprecatedMSEUnion" << ";";
+    f << "mlDeprecatedMSEJaccard" << ";";
+    f << "mlDeprecatedMSECosine" << ";";
+    f << "mlDeprecatedMSEInclusionCoefficient1" << ";";
+    f << "mlDeprecatedMSEInclusionCoefficient2" << ";";
+    f << "mlDeprecatedMSEAlpha" << ";";
+    f << "mlDeprecatedMSEBeta" << ";";
 
-    f << "simpleMeanDifference1" << ";";
-    f << "simpleMeanDifference2" << ";";
-    f << "simpleMeanIntersection" << ";";
-    f << "simpleMean1" << ";";
-    f << "simpleMean2" << ";";
-    f << "simpleMeanUnion" << ";";
-    f << "simpleMeanJaccard" << ";";
-    f << "simpleMeanCosine" << ";";
-    f << "simpleMeanInclusionCoefficient1" << ";";
-    f << "simpleMeanInclusionCoefficient2" << ";";
-    f << "simpleMeanAlpha" << ";";
-    f << "simpleMeanBeta" << ";";
+    f << "newMeanDifference1" << ";";
+    f << "newMeanDifference2" << ";";
+    f << "newMeanIntersection" << ";";
+    f << "newMean1" << ";";
+    f << "newMean2" << ";";
+    f << "newMeanUnion" << ";";
+    f << "newMeanJaccard" << ";";
+    f << "newMeanCosine" << ";";
+    f << "newMeanInclusionCoefficient1" << ";";
+    f << "newMeanInclusionCoefficient2" << ";";
+    f << "newMeanAlpha" << ";";
+    f << "newMeanBeta" << ";";
 
-    f << "simpleMSEDifference1" << ";";
-    f << "simpleMSEDifference2" << ";";
-    f << "simpleMSEIntersection" << ";";
-    f << "simpleMSE1" << ";";
-    f << "simpleMSE2" << ";";
-    f << "simpleMSEUnion" << ";";
-    f << "simpleMSEJaccard" << ";";
-    f << "simpleMSECosine" << ";";
-    f << "simpleMSEInclusionCoefficient1" << ";";
-    f << "simpleMSEInclusionCoefficient2" << ";";
-    f << "simpleMSEAlpha" << ";";
-    f << "simpleMSEBeta" << ";";
+    f << "newMSEDifference1" << ";";
+    f << "newMSEDifference2" << ";";
+    f << "newMSEIntersection" << ";";
+    f << "newMSE1" << ";";
+    f << "newMSE2" << ";";
+    f << "newMSEUnion" << ";";
+    f << "newMSEJaccard" << ";";
+    f << "newMSECosine" << ";";
+    f << "newMSEInclusionCoefficient1" << ";";
+    f << "newMSEInclusionCoefficient2" << ";";
+    f << "newMSEAlpha" << ";";
+    f << "newMSEBeta" << ";";
+
+    f << "simpleDeprecatedMeanDifference1" << ";";
+    f << "simpleDeprecatedMeanDifference2" << ";";
+    f << "simpleDeprecatedMeanIntersection" << ";";
+    f << "simpleDeprecatedMean1" << ";";
+    f << "simpleDeprecatedMean2" << ";";
+    f << "simpleDeprecatedMeanUnion" << ";";
+    f << "simpleDeprecatedMeanJaccard" << ";";
+    f << "simpleDeprecatedMeanCosine" << ";";
+    f << "simpleDeprecatedMeanInclusionCoefficient1" << ";";
+    f << "simpleDeprecatedMeanInclusionCoefficient2" << ";";
+    f << "simpleDeprecatedMeanAlpha" << ";";
+    f << "simpleDeprecatedMeanBeta" << ";";
+
+    f << "simpleDeprecatedMSEDifference1" << ";";
+    f << "simpleDeprecatedMSEDifference2" << ";";
+    f << "simpleDeprecatedMSEIntersection" << ";";
+    f << "simpleDeprecatedMSE1" << ";";
+    f << "simpleDeprecatedMSE2" << ";";
+    f << "simpleDeprecatedMSEUnion" << ";";
+    f << "simpleDeprecatedMSEJaccard" << ";";
+    f << "simpleDeprecatedMSECosine" << ";";
+    f << "simpleDeprecatedMSEInclusionCoefficient1" << ";";
+    f << "simpleDeprecatedMSEInclusionCoefficient2" << ";";
+    f << "simpleDeprecatedMSEAlpha" << ";";
+    f << "simpleDeprecatedMSEBeta" << ";";
 
     f << "inclExclMeanDifference1" << ";";
     f << "inclExclMeanDifference2" << ";";
@@ -342,57 +371,83 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
         f << trueJoint.getAlpha() << ";";
         f << trueJoint.getBeta() << ";";
 
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getDifference1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getDifference2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getIntersection();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].get1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].get2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getUnion();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getJaccard();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getCosine();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getInclusionCoefficient1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getAlpha();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointML[idx][j].getBeta();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getDifference1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getDifference2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getIntersection();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].get1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].get2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getUnion();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getJaccard();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getCosine();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getInclusionCoefficient1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getAlpha();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointMLDeprecated[idx][j].getBeta();}, numExamples) << ";";
 
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].get1();}, numExamples, trueJoint.get1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].get2();}, numExamples, trueJoint.get2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getUnion();}, numExamples, trueJoint.getUnion()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getJaccard();}, numExamples, trueJoint.getJaccard()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getCosine();}, numExamples, trueJoint.getCosine()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getInclusionCoefficient1();}, numExamples, trueJoint.getInclusionCoefficient1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointML[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].get1();}, numExamples, trueJoint.get1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].get2();}, numExamples, trueJoint.get2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getUnion();}, numExamples, trueJoint.getUnion()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getJaccard();}, numExamples, trueJoint.getJaccard()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getCosine();}, numExamples, trueJoint.getCosine()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getInclusionCoefficient1();}, numExamples, trueJoint.getInclusionCoefficient1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointMLDeprecated[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
 
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getDifference1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getDifference2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getIntersection();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].get1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].get2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getUnion();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getJaccard();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getCosine();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getInclusionCoefficient1();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getAlpha();}, numExamples) << ";";
-        f << calculateMean([&](uint64_t idx){return estJointSimple[idx][j].getBeta();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getDifference1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getDifference2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getIntersection();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].get1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].get2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getUnion();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getJaccard();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getCosine();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getInclusionCoefficient1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getAlpha();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointNew[idx][j].getBeta();}, numExamples) << ";";
 
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].get1();}, numExamples, trueJoint.get1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].get2();}, numExamples, trueJoint.get2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getUnion();}, numExamples, trueJoint.getUnion()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getJaccard();}, numExamples, trueJoint.getJaccard()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getCosine();}, numExamples, trueJoint.getCosine()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getInclusionCoefficient1();}, numExamples, trueJoint.getInclusionCoefficient1()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
-        f << calculateMSE([&](uint64_t idx){return estJointSimple[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].get1();}, numExamples, trueJoint.get1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].get2();}, numExamples, trueJoint.get2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getUnion();}, numExamples, trueJoint.getUnion()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getJaccard();}, numExamples, trueJoint.getJaccard()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getCosine();}, numExamples, trueJoint.getCosine()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getInclusionCoefficient1();}, numExamples, trueJoint.getInclusionCoefficient1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointNew[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
+
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getDifference1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getDifference2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getIntersection();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].get1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].get2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getUnion();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getJaccard();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getCosine();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getInclusionCoefficient1();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getInclusionCoefficient2();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getAlpha();}, numExamples) << ";";
+        f << calculateMean([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getBeta();}, numExamples) << ";";
+
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getDifference1();}, numExamples, trueJoint.getDifference1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getDifference2();}, numExamples, trueJoint.getDifference2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getIntersection();}, numExamples, trueJoint.getIntersection()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].get1();}, numExamples, trueJoint.get1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].get2();}, numExamples, trueJoint.get2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getUnion();}, numExamples, trueJoint.getUnion()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getJaccard();}, numExamples, trueJoint.getJaccard()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getCosine();}, numExamples, trueJoint.getCosine()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getInclusionCoefficient1();}, numExamples, trueJoint.getInclusionCoefficient1()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getInclusionCoefficient2();}, numExamples, trueJoint.getInclusionCoefficient2()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getAlpha();}, numExamples, trueJoint.getAlpha()) << ";";
+        f << calculateMSE([&](uint64_t idx){return estJointSimpleDeprecated[idx][j].getBeta();}, numExamples, trueJoint.getBeta()) << ";";
 
         f << calculateMean([&](uint64_t idx){return estJointInclExcl[idx][j].getDifference1();}, numExamples) << ";";
         f << calculateMean([&](uint64_t idx){return estJointInclExcl[idx][j].getDifference2();}, numExamples) << ";";
@@ -436,18 +491,17 @@ void test(uint64_t seed, const C& config, bool rangeCorrection) {
 int main(int argc, char* argv[]) {
 
     mt19937_64 dataSeedRng(0xf5c1f864cefbf048);
-    mt19937_64 configSeedRng(0x79b5d54d2f1489da);
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62, configSeedRng()), false);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 1.2, 30, std::numeric_limits<uint8_t>::max() - 1, configSeedRng()), false);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), false);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), false);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 1.2, 30, std::numeric_limits<uint8_t>::max() - 1), false);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), false);
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62, configSeedRng()), false);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 1.2, 30, std::numeric_limits<uint8_t>::max() - 1, configSeedRng()), false);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), false);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), false);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 1.2, 30, std::numeric_limits<uint8_t>::max() - 1), false);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), false);
 
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62, configSeedRng()), true);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 1.2, std::numeric_limits<uint8_t>::max() - 1, configSeedRng()), true);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), true);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62), true);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 1.2, std::numeric_limits<uint8_t>::max() - 1), true);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1), true);
 
 }

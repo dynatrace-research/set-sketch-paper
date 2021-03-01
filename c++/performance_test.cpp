@@ -44,12 +44,12 @@ static string getFileName(const C& config) {
     return ss.str();
 }
 
+static const uint64_t wyhashSecret[5] = {UINT64_C(0xbbc3be7c929be0ca), UINT64_C(0x2cfbaea4f1028efe), UINT64_C(0xc04f8e039a014db9), UINT64_C(0x28b6e9976c77fe03), UINT64_C(0x2c9721025c30d441)};
+
 template<typename C>
 void test(uint64_t seed, C&& config, const vector<uint64_t>& cardinalities) {
 
     const uint64_t numCycles = 1000; // takes approx. 210 min
-
-    uint64_t state = seed;
 
     vector<double> recordingTimeSeconds(cardinalities.size(), 0);
     vector<double> estimates(cardinalities.size(), 0);
@@ -60,7 +60,10 @@ void test(uint64_t seed, C&& config, const vector<uint64_t>& cardinalities) {
         double e = 0;
         for(uint64_t cycleCounter = 0; cycleCounter < numCycles; ++cycleCounter) {
             auto sketch = config.create();
-            for(uint64_t j = 0; j < cardinality; ++j) sketch.add(wyrand(&state));
+            for(uint64_t j = 0; j < cardinality; ++j) {
+                uint64_t dataItem = wyhash(&j, 8, seed, wyhashSecret);
+                sketch.add(dataItem);
+            }
             e += sketch.estimateCardinalitySimple(false);
         }
         auto endMeasurement = chrono::high_resolution_clock::now();
@@ -134,9 +137,8 @@ std::vector<uint64_t> getCardinalities() {
 
 int main(int argc, char* argv[]) {
 
-    mt19937_64 configSeedRng(UINT64_C(0x9799d8d65c8534be));
-
     mt19937_64 dataSeedRng(UINT64_C(0x291be5007a3d06fc));
+
     const vector<uint64_t> cardinalities = getCardinalities();
 
     test(dataSeedRng(), DummyConfig(), cardinalities);
@@ -146,34 +148,34 @@ int main(int argc, char* argv[]) {
     test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(12, 52), cardinalities);
     test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(14, 50), cardinalities);
 
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(256, 2., 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(1024, 2., 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(4096, 2., 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62, configSeedRng()), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(256, 2., 62), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(1024, 2., 62), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(4096, 2., 62), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62), cardinalities);
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62, configSeedRng()), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), cardinalities);
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62, configSeedRng()), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), cardinalities);
 
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(256, 1.001, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(1024, 1.001, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(4096, 1.001, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(256, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(1024, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(4096, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1, configSeedRng()), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
 
 }
