@@ -287,12 +287,16 @@ class PermutationStream {
     #endif
 public:
 
-    bool hasNext() const {
+    PermutationStream()=delete;
+    PermutationStream(const PermutationStream&)=delete;
+    PermutationStream(PermutationStream&&)=delete;
+
+    static bool hasNext() {
         return idx < size;
     }
 
     template <typename H>
-    uint32_t next(H& hashBitStream) {
+    static uint32_t next(H& hashBitStream) {
         const uint32_t k = idx + getUniformLemire(size - idx, hashBitStream);
         auto& permutationAndVersionK = permutationAndVersion[k];
         const auto& permutationAndVersionIdx = permutationAndVersion[idx];
@@ -304,8 +308,8 @@ public:
     }
 
     // must be called first before iterating over a new permutation using next-method
-    void reset(uint32_t size) {
-        this->size = size;
+    static void reset(uint32_t size) {
+        PermutationStream::size = size;
         idx = 0;
         if (allocated_size < size) {
             permutationAndVersion.reset(new std::pair<uint32_t, uint32_t>[size]);

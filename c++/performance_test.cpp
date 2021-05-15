@@ -35,53 +35,7 @@
 
 using namespace std;
 
-template<typename C>
-static string getFileName(const C& config) {
-    stringstream ss;
-    ss << "data/performance_test(";
-    appendInfo(ss, config);
-    ss << ").csv";
-    return ss.str();
-}
 
-static const uint64_t wyhashSecret[5] = {UINT64_C(0xbbc3be7c929be0ca), UINT64_C(0x2cfbaea4f1028efe), UINT64_C(0xc04f8e039a014db9), UINT64_C(0x28b6e9976c77fe03), UINT64_C(0x2c9721025c30d441)};
-
-template<typename C>
-void test(uint64_t seed, C&& config, const vector<uint64_t>& cardinalities) {
-
-    const uint64_t numCycles = 1000; // takes approx. 210 min
-
-    vector<double> recordingTimeSeconds(cardinalities.size(), 0);
-    vector<double> estimates(cardinalities.size(), 0);
-
-    for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
-        const uint64_t cardinality = cardinalities[cardinalityIdx];
-        auto beginMeasurement = chrono::high_resolution_clock::now();
-        double e = 0;
-        for(uint64_t cycleCounter = 0; cycleCounter < numCycles; ++cycleCounter) {
-            auto sketch = config.create();
-            for(uint64_t j = 0; j < cardinality; ++j) {
-                uint64_t dataItem = wyhash(&j, 8, seed, wyhashSecret);
-                sketch.add(dataItem);
-            }
-            e += sketch.estimateCardinalitySimple(false);
-        }
-        auto endMeasurement = chrono::high_resolution_clock::now();
-
-        recordingTimeSeconds[cardinalityIdx] = static_cast<double>(chrono::duration_cast<chrono::nanoseconds>(endMeasurement-beginMeasurement).count()) / (1e9 * numCycles);
-        estimates[cardinalityIdx] = e / numCycles;
-    }
-
-    ofstream f(getFileName(config));
-    appendInfo(f, config);
-    f << "numCycles=" << numCycles << ";";
-    f << endl;
-    f << "cardinality; avg time in seconds;avg estimated cardinality;" << endl;
-    for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
-        f << cardinalities[cardinalityIdx] << ";" << recordingTimeSeconds[cardinalityIdx] << ";" << estimates[cardinalityIdx] << endl;
-    }
-    f.close();
-}
 
 class DummySketch {
     uint64_t state = 0;
@@ -90,25 +44,116 @@ public:
         state += l;
     }
 
-    double estimateCardinalitySimple(bool b) const {
+    uint64_t getState() const {
         return state;
     }
-};
 
+};
 
 class DummyConfig {
 public:
     DummySketch create() const {
         return DummySketch();
     }
+
+    uint32_t getNumRegisters() const {return 0;}
+
+    std::string getName() const {return "DummyConfig";}
 };
 
-void appendInfo(std::ostream& os, const DummyConfig& config)
-{
-    os << "dummy;";
+template<typename C>
+static string getFileName(const C& config, const std::string& aggregationModeDescription) {
+    stringstream ss;
+    ss << "data/performance_test(";
+    appendInfo(ss, config);
+    ss << "aggregationMode=" << aggregationModeDescription << ";";
+    ss << ").csv";
+    return ss.str();
 }
 
-std::vector<uint64_t> getCardinalities() {
+static const uint64_t wyhashSecret[4] = {UINT64_C(0xbbc3be7c929be0ca), UINT64_C(0x2cfbaea4f1028efe), UINT64_C(0xc04f8e039a014db9), UINT64_C(0x28b6e9976c77fe03)};
+
+class RandomNumbers {
+    uint64_t seed;
+    uint64_t mSize;
+public:
+
+    class RandomNumberIterator {
+        uint64_t seed;
+        uint64_t index;
+    public:
+
+        RandomNumberIterator(uint64_t seed, uint64_t index): seed(seed), index(index) {}
+
+        uint64_t operator*() const {
+            return wyhash(&index, 8, seed, wyhashSecret);
+        }
+
+        RandomNumberIterator operator++() {
+            index += 1;
+            return *this;
+        }
+
+        bool operator!=(RandomNumberIterator& it) const {
+            return index != it.index;
+        }
+    };
+
+    RandomNumbers(uint64_t seed, uint64_t size) : seed(seed), mSize(size) {}
+
+    RandomNumberIterator begin() const {
+        return RandomNumberIterator(seed, UINT64_C(0));
+    }
+
+    RandomNumberIterator end() const {
+        return RandomNumberIterator(seed, mSize);
+    }
+
+    uint64_t size() const {return mSize;}
+};
+
+
+struct StreamAggregation {
+
+    template<typename S, typename D>
+    void aggregate(S& sketch, const D& data) const {
+        for(uint64_t d : data) {
+            sketch.add(d);
+        }
+    }
+
+    string getDescription() const {
+        return "stream";
+    }
+
+};
+
+struct BulkAggregation {
+
+    template<typename S, typename D>
+    void aggregate(S& sketch, const D& data) const {
+        sketch.addAll(data);
+    }
+
+    string getDescription() const {
+        return "bulk";
+    }
+
+};
+
+template<typename S> uint64_t consumeState(const S& sketch) {
+    uint64_t sum = 0;
+    for(auto r : sketch.getState()) sum += r;
+    return sum;
+}
+
+uint64_t consumeState(const DummySketch& sketch) {
+    return sketch.getState();
+}
+
+template<typename C>
+std::vector<uint64_t> getCardinalities(C&& config) {
+
     vector<uint64_t> cardinalities;
     cardinalities.push_back(1);
     cardinalities.push_back(2);
@@ -126,56 +171,97 @@ std::vector<uint64_t> getCardinalities() {
     cardinalities.push_back(20000);
     cardinalities.push_back(50000);
     cardinalities.push_back(100000);
-    cardinalities.push_back(200000);
-    cardinalities.push_back(500000);
-    cardinalities.push_back(1000000);
-    cardinalities.push_back(2000000);
-    cardinalities.push_back(5000000);
-    cardinalities.push_back(10000000);
+    if (!std::is_same<typename std::remove_reference<C>::type, MinHashConfig>::value) {
+        // do not add large cardinalities for minhash, test would take too much time otherwise
+        cardinalities.push_back(200000);
+        cardinalities.push_back(500000);
+        cardinalities.push_back(1000000);
+        cardinalities.push_back(2000000);
+        cardinalities.push_back(5000000);
+        cardinalities.push_back(10000000);
+    }
+
     return cardinalities;
+}
+
+template<typename C, typename A>
+void test(uint64_t seed, C&& config, const A& aggregationMode) {
+
+    const uint64_t numCycles = 1000; // 1000 takes 1h 45min
+
+    const vector<uint64_t> cardinalities = getCardinalities(config);
+
+    vector<double> recordingTimeSeconds1(cardinalities.size(), 0);
+    vector<double> recordingTimeSeconds2(cardinalities.size(), 0);
+    vector<uint64_t> sumOfConsumedStates(cardinalities.size(), 0);
+
+    for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
+        const uint64_t cardinality = cardinalities[cardinalityIdx];
+        uint64_t sum = 0;
+        auto beginMeasurement1 = chrono::high_resolution_clock::now();
+        double sumMeasurement2Seconds = 0;
+        for(uint64_t cycleCounter = 0; cycleCounter < numCycles; ++cycleCounter) {
+            auto sketch = config.create();
+            auto beginMeasurement2 = chrono::high_resolution_clock::now();
+            aggregationMode.aggregate(sketch, RandomNumbers(seed, cardinality));
+            auto endMeasurement2 = chrono::high_resolution_clock::now();
+            sumMeasurement2Seconds += std::chrono::duration<double>(endMeasurement2-beginMeasurement2).count();
+            sum += consumeState(sketch);
+        }
+        auto endMeasurement1 = chrono::high_resolution_clock::now();
+        recordingTimeSeconds1[cardinalityIdx] =  std::chrono::duration<double>(endMeasurement1-beginMeasurement1).count() / static_cast<double>(numCycles);
+        recordingTimeSeconds2[cardinalityIdx] = sumMeasurement2Seconds / static_cast<double>(numCycles);
+        sumOfConsumedStates[cardinalityIdx] = sum;
+    }
+
+    ofstream f(getFileName(config, aggregationMode.getDescription()));
+    appendInfo(f, config);
+    f << "numCycles=" << numCycles << ";";
+    f << "aggregationMode=" << aggregationMode.getDescription() << ";";
+    f << endl;
+    f << "cardinality; avg time in seconds (incl. allocation); avg time in seconds (excl. allocation);sum of consumed states;" << endl;
+    for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
+        f << cardinalities[cardinalityIdx] << ";" << recordingTimeSeconds1[cardinalityIdx] << ";" << recordingTimeSeconds2[cardinalityIdx] << ";" << sumOfConsumedStates[cardinalityIdx] << ";" << endl;
+    }
+    f.close();
+}
+
+void appendInfo(std::ostream& os, const DummyConfig& config)
+{
+    os << "dummy;";
 }
 
 int main(int argc, char* argv[]) {
 
     mt19937_64 dataSeedRng(UINT64_C(0x291be5007a3d06fc));
 
-    const vector<uint64_t> cardinalities = getCardinalities();
+    test(dataSeedRng(), DummyConfig(), StreamAggregation());
 
-    test(dataSeedRng(), DummyConfig(), cardinalities);
+    std::vector<uint64_t> registerSizeExponents = {8, 12};
 
-    test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(8, 56), cardinalities);
-    test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(10, 54), cardinalities);
-    test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(12, 52), cardinalities);
-    test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(14, 50), cardinalities);
+    for(uint64_t registerSizeExponent : registerSizeExponents) {
 
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(256, 2., 62), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(1024, 2., 62), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(4096, 2., 62), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62), cardinalities);
+        const uint32_t numRegisters = UINT32_C(1) << registerSizeExponent;
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), cardinalities);
+        test(dataSeedRng(), HyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(registerSizeExponent, 64 - registerSizeExponent), StreamAggregation());
+        test(dataSeedRng(), HyperLogLogConfig<Registers<uint8_t>>(registerSizeExponent, 64 - registerSizeExponent), StreamAggregation());
+        
+        test(dataSeedRng(), MinHashConfig(numRegisters), StreamAggregation());
+        
+        test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(numRegisters, 2., 62), StreamAggregation());
+        test(dataSeedRng(), GeneralizedHyperLogLogConfig<Registers<uint8_t>>(numRegisters, 2., 62), StreamAggregation());
+        
+        test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(numRegisters, 2., 20, 62), StreamAggregation());
+        test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(numRegisters, 2., 20, 62), StreamAggregation());
+        test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(numRegisters, 2., 20, 62), BulkAggregation());
+        test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(numRegisters, 2., 20, 62), BulkAggregation());
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62), cardinalities);
-
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(256, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(1024, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(4096, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1), cardinalities);
-
+        test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(numRegisters, 1.001, 62), StreamAggregation());
+        test(dataSeedRng(), GeneralizedHyperLogLogConfig<Registers<uint8_t>>(numRegisters, 1.001, 62), StreamAggregation());
+        
+        test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(numRegisters, 1.001, 20, 62), StreamAggregation());
+        test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(numRegisters, 1.001, 20, 62), StreamAggregation());
+        test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(numRegisters, 1.001, 20, 62), BulkAggregation());
+        test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(numRegisters, 1.001, 20, 62), BulkAggregation());
+    }
 }

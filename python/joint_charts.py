@@ -31,28 +31,50 @@ from matplotlib.ticker import LogLocator
 matplotlib.use("PDF")
 import math
 import glob
+import numpy
 
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}\RequirePackage[T1]{fontenc} \RequirePackage[tt=false, type1=true]{libertine} \RequirePackage[varqu]{zi4} \RequirePackage[libertine]{newtxmath}')
 
 linewidth_incl_excl = 1
-linewidth_new = 1
-linewidth_theory = 1
 linestyle_incl_excl = "dashed"
+color_incl_excl = "blue"
+
+linewidth_new = 1
 linestyle_new = "solid"
-linestyle_theory = "dashdot"
+color_new = "black"
 
-def calculateMinHashRelativeRMSE(J, u, m):
-    return math.sqrt((1-J)/(J*m))
+linewidth_new_known_card = 2
+linestyle_new_known_card = "dotted"
+color_new_known_card="black"
+
+linewidth_theory = 1
+linestyle_theory = "solid"
+color_theory = "red"
+
+linewidth_simple_deprecated = 1
+linestyle_simple_deprecated = "dashdot"
+color_simple_deprecated = "blue"
+
+linewidth_original = 1
+linestyle_original = "solid"
+color_original = "gray"
+
+linewidth_original_known_card = 2
+linestyle_original_known_card = "dotted"
+color_original_known_card = "gray"
+
+def calculate_minhash_relative_rmse(j, m):
+    return math.sqrt((1-j)/(j*m))
 
 
-def calculateSuperMinHashRelativeRMSE(J, u, m):
+def calculate_superminhash_relative_rmse(j, u, m):
     s = 0
     for q in range(1, m):
         s += pow(q / (m - 1), u) * (pow((q+1)/m, u) +
                                     pow((q-1)/m, u) - 2*pow(q/m, u))
     factor = 1. - s * (m - 1)/(u - 1)
-    return math.sqrt(factor * (1-J)/(J*m))
+    return math.sqrt(factor * (1-j)/(j*m))
 
 def read_data(data_file):
 
@@ -90,217 +112,256 @@ def read_data(data_file):
 def get_true_union_size(data, j):
     return int(data["trueIntersection"][j]) + int(data["trueDifference1"][j]) + int(data["trueDifference2"][j])
 
-def get_true_jaccard_similarity_inverse(data, j):
-    return get_true_union_size(data, j) / int(data["trueIntersection"][j])
+def get_true_jaccard_similarity(data, j):
+    return int(data["trueIntersection"][j]) / get_true_union_size(data, j)
 
-
-def make_chart(colors, data, size, union_cardinality, ax, new_label, incl_excl_label, true_label, intersect_values):
-    for idx in range(0, len(intersect_values)):
-        i = intersect_values[idx]
-        ratios = []
-        new_jaccard_relative_errors = []
-        incl_excl_jaccard_relative_errors = []
-        for j in range(0, size):
-            if data["trueIntersection"][j] != i or data["trueDifference2"][j] == 0 or get_true_union_size(data, j) != union_cardinality:
-                continue
-
-            ratios.append(data["trueDifference1"][j] / data["trueDifference2"][j])
-
-            new_jaccard_relative_errors.append(math.sqrt(data[new_label][j])/ data[true_label][j])
-            incl_excl_jaccard_relative_errors.append(math.sqrt(data[incl_excl_label][j])/ data[true_label][j])
-
-        ax.plot(ratios, new_jaccard_relative_errors, color = colors[idx], linewidth=linewidth_new, linestyle=linestyle_new)
-        ax.plot(ratios, incl_excl_jaccard_relative_errors, color = colors[idx], linewidth=linewidth_incl_excl, linestyle=linestyle_incl_excl)
-
-def plot_superminhash_relative_rmse(colors, data, size, union_cardinality, ax, intersect_values, m):
-    for idx in range(0, len(intersect_values)):
-        j = intersect_values[idx]/union_cardinality
-        relative_rmse = calculateSuperMinHashRelativeRMSE(j, union_cardinality, m)
-        relative_rmse_mh = calculateMinHashRelativeRMSE(j, union_cardinality, m)
-        # ax.plot([1,1e9], [relative_rmse,relative_rmse], color = colors[idx], linewidth=linewidthML, linestyle="dashdot")
-        # print("SMH union=" + str(union_cardinality) + " J=" + str(j) + " relRMSE=" + str(relative_rmse) + " " + str(relative_rmse/relative_rmse_mh))
-
-def plot_minhash_relative_rmse(colors, data, size, union_cardinality, ax, intersect_values, m):
-    for idx in range(0, len(intersect_values)):
-        j = intersect_values[idx]/union_cardinality
-        relative_rmse = calculateMinHashRelativeRMSE(j, union_cardinality, m)
-        # ax.plot([1,1e9], [relative_rmse,relative_rmse], color = colors[idx], linewidth=linewidthML, linestyle="dashdot")
-        # print("MH union=" + str(union_cardinality) + " J=" + str(j) + " relRMSE=" + str(relative_rmse))
-
-def calculate_theoretical_relativ_standard_error(alpha_beta_ratio, jaccard_similarity, m, base_value):
-    beta = (1 - jaccard_similarity) / (1 + alpha_beta_ratio)
-    alpha = beta * alpha_beta_ratio
-
-    ax = 1 - alpha + alpha / base_value
-    bx = 1 - beta + beta / base_value
-
-    logax = math.log(ax, base_value)
-    logbx = math.log(bx, base_value)
-
-    factor = -pow(math.log(base_value),2)/(m * math.pow(1-1/base_value,2))
-
-    return math.sqrt(factor * (ax*ax*logax + bx*bx*logbx + pow(ax*logax + bx*logbx,2))) / jaccard_similarity
-
-def plot_theoretical_relativ_standard_error(colors, data, size, union_cardinality, ax, intersect_values, m, base_value):
-    b = 1.01
-    max_alpha_beta_ratio = 10000
-    alpha_beta_ratios = [pow(b, k) for k in range(0, math.ceil(math.log(max_alpha_beta_ratio)/math.log(b)))]
-
-    for idx in range(0, len(intersect_values)):
-        intersection_cardinality = intersect_values[idx]
-        jaccard_similarity = intersect_values[idx]/union_cardinality
-        theoretical_standard_errors = [calculate_theoretical_relativ_standard_error(alpha_beta_ratio, jaccard_similarity, m, base_value) for alpha_beta_ratio in alpha_beta_ratios]
-        ax.plot(alpha_beta_ratios, theoretical_standard_errors, color = colors[idx], linewidth=linewidth_theory, linestyle=linestyle_theory)
-        # print("MH union=" + str(union_cardinality) + " J=" + str(j) + " relRMSE=" + str(relative_rmse))
-
-def format_union_size(union_size):
-    if union_size == 1000:
-        return "10^3"
-    elif union_size == 1000000:
-        return "10^6"
+def p(b,x):
+    if b > 1:
+        return -math.log1p(-x*(b-1) / b) / math.log(b)
     else:
-        assert(False)
+        return x
 
-def format_jaccard_similarity(jaccard_index_inv):
-    if jaccard_index_inv == 10:
-        return "0.1"
-    if jaccard_index_inv == 100:
-        return "0.01"
-    if jaccard_index_inv == 1000:
-        return "0.001"
-    else:
-        assert(False)
+def calculate_theoretical_relative_standard_error_jaccard(alpha_beta_ratio, j, m, b):
+    u = (alpha_beta_ratio + j) / (1 + alpha_beta_ratio)
+    v = (1 + j * alpha_beta_ratio) / (1 + alpha_beta_ratio)
+    uu = u / (u + v)
+    vv = v / (u + v)
+    factor = (b-1)/(b * math.log(b)) if b > 1 else 1
+    pu = p(b, uu - vv * j)
+    pv = p(b, vv - uu * j)
+    bu = pow(b, pu)
+    bv = pow(b, pv)
+    fisher_info =  m * pow(factor,2) * (pow(vv*bu + uu*bv,2) / (1 - pu - pv)  + pow(vv*bu,2) / pu + pow(uu*bv,2) / pv)
+    return math.sqrt(1/fisher_info) / j
 
-def make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_values):
+def calculate_theoretical_relative_standard_error_difference1(alpha_beta_ratio, j, m, b):
+    u = (alpha_beta_ratio + j) / (1 + alpha_beta_ratio)
+    v = (1 + j * alpha_beta_ratio) / (1 + alpha_beta_ratio)
+    return calculate_theoretical_relative_standard_error_jaccard(alpha_beta_ratio, j, m, b) * (u+v)/(u-v*j) * j/(1+j)
 
-    colors = ["#003f5c", "#bc5090", "#ffa600"]
+def expected_relative_rmse_jaccard(ratios, b, m, j):
+    return [calculate_theoretical_relative_standard_error_jaccard(r, j, m, b) for r in ratios]
 
-    fig = plt.figure(figsize=(13, 8), constrained_layout=False)
+def original_relative_rmse_jaccard(ratios, m, j):
+    return [calculate_minhash_relative_rmse(j, m) for _ in ratios]
 
-    outer_grid = fig.add_gridspec(ncols=1, nrows=len(base_values), wspace=0., hspace=0.07)
+def expected_relative_rmse_intersection(ratios, b, m, j):
+    return [calculate_theoretical_relative_standard_error_jaccard(r, j, m, b) / (1+j) for r in ratios]
 
-    inner_grids = []
-    for base_value_idx in range(0, len(base_values)):
-        inner_grid = outer_grid[base_value_idx,0].subgridspec(ncols=5, nrows=len(union_sizes), wspace=0.04, hspace=0.07)
-        inner_grids.append(inner_grid)
+def expected_relative_rmse_difference1(ratios, b, m, j):
+    return [calculate_theoretical_relative_standard_error_difference1(r, j, m, b) for r in ratios]
+
+
+def extract_relative_error(matching_data, prefix, postfix, jaccard, union_size):
+    info, data, size = matching_data
+
+    ratios = []
+    values = []
+
+    postfix1 = postfix
+    if postfix1[-1] == "1":
+        postfix1 = postfix1[:-1] + "2"
+    elif  postfix1[-1] == "2":
+        postfix1 = postfix1[:-1] + "1"
+    postfix2 = postfix
+
+    for j in range(size-1, 0, -1):
+        if get_true_jaccard_similarity(data, j) != jaccard or data["trueDifference1"][j] == 0  or data["true" + postfix1][j] == 0 or get_true_union_size(data, j) != union_size:
+            continue
+        ratios.append(data["trueDifference2"][j] / data["trueDifference1"][j])
+        values.append(math.sqrt(data[prefix + "MSE" + postfix1][j])/ data["true" + postfix1][j])
+
+    for j in range(0, size):
+        if get_true_jaccard_similarity(data, j) != jaccard or data["trueDifference2"][j] == 0  or data["true" + postfix2][j] == 0 or get_true_union_size(data, j) != union_size:
+            continue
+        ratios.append(data["trueDifference1"][j] / data["trueDifference2"][j])
+        values.append(math.sqrt(data[prefix + "MSE" + postfix2][j])/ data["true" + postfix2][j])
+
+    return ratios,values
+
+def plot_charts(ax, all_data, b, union_size, jaccard, m, sketch_name):
+
+    matching_data = None
+    for selected_data in all_data:
+        info, data, size = selected_data
+        if float(info["base"]) != b: continue
+        if int(info["numRegisters"]) != m: continue
+        if info["name"] != sketch_name: continue
+        matching_data = selected_data
+        break
+
+    assert(matching_data != None)
+
+    x = numpy.logspace(-3, 3, 1000)
+    for a,f in zip(ax, [expected_relative_rmse_jaccard, expected_relative_rmse_intersection, expected_relative_rmse_intersection, expected_relative_rmse_intersection, expected_relative_rmse_difference1]):
+        a.plot(x, f(x, b, m, jaccard), color=color_theory, linestyle=linestyle_theory, linewidth=linewidth_theory)
+
+    for a,s in zip(ax, ["Jaccard", "Cosine", "InclusionCoefficient1", "Intersection", "Difference1"]):
+        if sketch_name == "MinHash" or sketch_name == "HyperMinHash":
+            x,y = extract_relative_error(matching_data, "original", s, jaccard, union_size)
+            a.plot(x, y, color=color_original, linestyle=linestyle_original, linewidth=linewidth_original)
+            x,y = extract_relative_error(matching_data, "originalKnownCard", s, jaccard, union_size)
+            a.plot(x, y, color=color_original_known_card, linestyle=linestyle_original_known_card, linewidth=linewidth_original_known_card)
+        x,y = extract_relative_error(matching_data, "new", s, jaccard, union_size)
+        a.plot(x, y, color=color_new, linestyle=linestyle_new, linewidth=linewidth_new)
+        x,y = extract_relative_error(matching_data, "newKnownCard", s, jaccard, union_size)
+        a.plot(x, y, color=color_new_known_card, linestyle=linestyle_new_known_card, linewidth=linewidth_new_known_card)
+        x,y = extract_relative_error(matching_data, "inclExcl", s, jaccard, union_size)
+        a.plot(x, y, color=color_incl_excl, linestyle=linestyle_incl_excl, linewidth=linewidth_incl_excl)
+
+    for a in ax:
+        a.set_xscale("log", basex=10)
+        a.set_xlim(1e-3,1e3)
+        a.set_yscale("log", basey=10)
+
+def draw_figure(sketch_name, all_data, union_size, b_values, fig):
+
+    num_charts = 5
+    j_values = [0.01, 0.1, 0.5]
+
+    outer_grid = fig.add_gridspec(ncols=1, nrows=len(b_values), wspace=0., hspace=0.08)
+    inner_grids = [outer_grid[i, 0].subgridspec(ncols=5, nrows=len(j_values), wspace=0.2, hspace=0.08) for i in range(0,len(b_values))]
 
     axs = []
-    for base_value_idx in range(0, len(base_values)):
-        axs1 = []
-        axs.append(axs1)
-        for union_size_idx in range(0, len(union_sizes)):
-            axs2 = []
-            axs1.append(axs2)
-            for i in range(0,5):
-                ax = fig.add_subplot(inner_grids[base_value_idx][union_size_idx, i])
-                axs2.append(ax)
-                ax.set_xscale("log", basex=10)
-                ax.set_yscale("log", basey=10)
-                ax.yaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10.0,numticks=100))
-                ax.yaxis.set_minor_locator(matplotlib.ticker.LogLocator(base=10.0,subs=(0.1, 0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),numticks=100))
-                ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
-                ax.xaxis.set_ticks([1, 1e1, 1e2, 1e3])
-                ax.xaxis.set_ticklabels(["$10^{0}$","$10^{1}$","$10^{2}$",""])
-                ax.set_xlim([1, 1e3])
-                #ax.set_ylim([3e-3, 5])
+    for section_idx in range(0,len(b_values)):
+        for row_idx in range(0,len(j_values)):
+            a = []
+            for col_idx in range(0,num_charts):
+                a.append(fig.add_subplot(inner_grids[section_idx][row_idx, col_idx]))
+            axs.append(a)
 
-                # top labels
-                if union_size_idx == 0 and base_value_idx == 0:
-                    if i == 0:
-                        s = r"Jaccard similarity $J=|A\cap B|/|A\cup B|$"
-                    elif i == 1:
-                        s = r"cosine similarity $|A\cap B|/\sqrt{|A||B|}$"
-                    elif i == 2:
-                        s = r"inclusion coefficient $|A\cap B|/|A|$"
-                    elif i == 3:
-                        s = r"inclusion coefficient $|A\cap B|/|B|$"
-                    elif i == 4:
-                        s = r"intersection size $\textstyle|A\cap B|$"
-                    ax2 = ax.twiny()
-                    ax2.set_xticks([])
-                    ax2.set_xlabel(s)
+    # share x-axes
+    ax_list = [a for aa in axs for a in aa ]
+    ax_list[0].get_shared_x_axes().join(*ax_list)
 
-                # hide tick labels
-                if base_value_idx != len(base_values)-1 or union_size_idx != len(union_sizes)-1:
-                    ax.tick_params(labelbottom=False)
-                if i!=0:
-                    ax.tick_params(labelleft=False)
+    # hide inner x-axis labels
+    for i in range(0, len(axs)):
+        if i % len(j_values) != 2:
+            for aa in axs[i]:
+                aa.tick_params(labelbottom=False)
 
-                # right labels
-                if i==0:
-                    ax.set_ylabel("relative RMSE")
-
-                # left labels
-                if i == 4:
-                    ax.text(x=1.04, y=0.5, rotation=270, s="$\mu =" + format_union_size(union_sizes[union_size_idx]) + "$", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
-
-                    if union_size_idx==0:
-                        ax.text(x=1.12, y=0.0, rotation=270, s="$b=" + str(base_values[base_value_idx]) + "$", horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
-
-                # bottom labels
-                if base_value_idx == len(base_values)-1 and union_size_idx == len(union_sizes)-1:
-                    ax.set_xlabel(r"$\alpha/\beta$")
+    # share y-axes
+    for k in range(0,len(j_values)):
+        ax_list = []
+        for i in range(0, len(b_values)):
+            ax_list += axs[k+i*len(j_values)][:-1]
+        ax_list[0].get_shared_y_axes().join(*ax_list)
+        ax_list = []
+        for i in range(0, len(b_values)):
+            ax_list.append(axs[k+i*len(j_values)][-1])
+        ax_list[0].get_shared_y_axes().join(*ax_list)
 
 
-    for base_value_idx in range(0, len(base_values)):
+    for i in range(0,len(j_values)):
+        for j in range(0,len(b_values)):
+            plot_charts(axs[len(j_values)*j + i], all_data, b_values[j], union_size, j_values[i], 4096, sketch_name)
 
-        for union_size_idx in range(0, len(union_sizes)):
 
-            base_value = base_values[base_value_idx]
-            union_size = union_sizes[union_size_idx]
+    # set y-scales
+    axs[0][0].set_ylim([4e-2,1.5e0])
+    axs[1][0].set_ylim([4e-3,1.5e-1])
+    axs[2][0].set_ylim([5e-4,4e-2])
+    for a in axs:
+        a[-1].set_ylim([3e-4,1.5e0])
+        a[-1].set_yticks([1e-3, 1e-2, 1e-1, 1e0])
 
-            for info, data, size in all_data:
+    # set x-ticks
+    for a in axs:
+        for aa in a:
+            aa.set_xticks([1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3])
 
-                if info["name"] != sketch_name: continue
-                if float(info["base"]) != base_value: continue
-                if not any([union_size == get_true_union_size(data, j) for j in range(0, size)]): continue
-                assert(16384 == int(info["numRegisters"]))
-                m = int(info["numRegisters"])
+    # top labels
+    top_labels = [r"Jaccard similarity $J=|U\cap V|/|U\cup V|$", r"cosine similarity $|U\cap V|/\sqrt{|U||V|}$", r"inclusion coefficient $|U\cap V|/|U|$", r"intersection size $|U\cap V|$", r"difference size $\textstyle|U\setminus V|$"]
+    for i in range(0, num_charts):
+        ax2 = axs[0][i].twiny()
+        ax2.set_xticks([])
+        ax2.set_xlabel(top_labels[i])
 
-                intersect_values = [union_size // j for j in jaccard_indices_inv]
+    # bottom labels
+    for axx in axs[-1]:
+        axx.set_xlabel(r"$|U\setminus V|/|V\setminus U|$")
 
-                make_chart(colors, data, size, union_size, axs[base_value_idx][union_size_idx][0], "newMSEJaccard", "inclExclMSEJaccard","trueJaccard",intersect_values)
-                # if sketch_name == "SetSketch2":
-                #     plot_superminhash_relative_rmse(colors, data, size, union_size, axs[base_value_idx][union_size_idx][0], intersect_values, m)
-                # elif sketch_name == "SetSketch1":
-                #     plot_minhash_relative_rmse(colors, data, size, union_size, axs[base_value_idx][union_size_idx][0], intersect_values, m)
-                # if sketch_name == "SetSketch1" or sketch_name == "SetSketch2":
-                #      plot_theoretical_relativ_standard_error(colors, data, size, union_size, axs[base_value_idx][union_size_idx][0], intersect_values, m, base_value)
-                make_chart(colors, data, size, union_size, axs[base_value_idx][union_size_idx][1], "newMSECosine", "inclExclMSECosine","trueCosine",intersect_values)
-                make_chart(colors, data, size, union_size, axs[base_value_idx][union_size_idx][2], "newMSEInclusionCoefficient1", "inclExclMSEInclusionCoefficient1","trueInclusionCoefficient1",intersect_values)
-                make_chart(colors, data, size, union_size, axs[base_value_idx][union_size_idx][3], "newMSEInclusionCoefficient2", "inclExclMSEInclusionCoefficient2","trueInclusionCoefficient2",intersect_values)
-                make_chart(colors, data, size, union_size, axs[base_value_idx][union_size_idx][4], "newMSEIntersection", "inclExclMSEIntersection","trueIntersection",intersect_values)
+    # left labels
+    for axx in axs:
+        fig.text(x=-0.22, y=0.5, rotation=90, s="relative RMSE", horizontalalignment='center', verticalalignment='center', transform=axx[0].transAxes)
+
+    # right labels
+    for i in range(0, len(b_values)):
+        for a,j in zip([axs[k] for k in range(i*len(j_values), (i+1)*len(j_values))], j_values):
+            fig.text(x=1.04, y=0.5, rotation=270, s="$J=" + str(j) + "$" , horizontalalignment='center', verticalalignment='center', transform=a[-1].transAxes)
+        b = b_values[i]
+        if len(b_values) > 1:
+            b_str = str(b) if b != 1.00067713069306641e+00 else r"2^{-2^{10}}"
+            fig.text(x=1.12, y=0.5, rotation=270, s="$b=" + b_str + "$" , horizontalalignment='center', verticalalignment='center', transform=axs[len(j_values)*i + 1][-1].transAxes)
 
     # legend
     leg_lines=[]
     leg_labels=[]
 
-    for idx in range(0, len(jaccard_indices_inv)):
-        leg_lines.append(matplotlib.lines.Line2D([0], [0], color=colors[idx], lw=1))
-        leg_labels.append(r"$J=" + format_jaccard_similarity(jaccard_indices_inv[idx]) + "$")
-    leg_lines.append(matplotlib.lines.Line2D([0], [0], color="gray", lw=linewidth_incl_excl, linestyle=linestyle_incl_excl))
-    leg_labels.append("inclusion-exclusion principle")
-    leg_lines.append(matplotlib.lines.Line2D([0], [0], color="gray", lw=linewidth_new, linestyle=linestyle_new))
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_new, lw=linewidth_new, linestyle=linestyle_new))
     leg_labels.append("new")
-    #leg_lines.append( matplotlib.lines.Line2D([0], [0], color="gray", lw=linewidth_theory, linestyle=linestyle_theory))
-    #leg_labels.append("theory")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_new_known_card, lw=linewidth_new_known_card, linestyle=linestyle_new_known_card))
+    leg_labels.append("new (cardinalities known)")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_theory, lw=linewidth_theory, linestyle=linestyle_theory))
+    leg_labels.append("theory new (cardinalities known)")
+
+    if sketch_name == "MinHash" or sketch_name == "HyperMinHash":
+        leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_original, lw=linewidth_original, linestyle=linestyle_original))
+        leg_labels.append("original")
+        leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_original_known_card, lw=linewidth_original_known_card, linestyle=linestyle_original_known_card))
+        leg_labels.append("original (cardinalities known)")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_incl_excl, lw=linewidth_incl_excl, linestyle=linestyle_incl_excl))
+    leg_labels.append("inclusion-exclusion")
+
 
     fig.legend(leg_lines, leg_labels, loc="lower center", ncol=len(leg_labels), bbox_to_anchor=(0.5,-0.005))
 
-    outfile = "joint(" + sketch_name + ").pdf"
+def create_figure(sketch_name, all_data, union_size):
 
-    fig.subplots_adjust(left=0.041, bottom=0.09, right=0.972, top=0.975)
+    b_values = [2, 1.001]
 
+    fig = plt.figure(figsize=(13, 6.95), constrained_layout=False)
+
+    draw_figure(sketch_name, all_data, union_size, b_values, fig)
+
+    fig.subplots_adjust(left=0.041, bottom=0.105, right=0.973, top=0.97)
+
+    outfile = "joint_" + sketch_name + "_" + str(union_size) + ".pdf"
     fig.savefig('paper/' + outfile, format='pdf', dpi=1200, metadata={'creationDate': None} )
     plt.close(fig)
 
+def create_small_figure(sketch_name, all_data, union_size, b):
+
+    b_values = [b]
+
+    fig = plt.figure(figsize=(13, 3.9), constrained_layout=False)
+
+    draw_figure(sketch_name, all_data, union_size, b_values, fig)
+
+    fig.subplots_adjust(left=0.041, bottom=0.185, right=0.973, top=0.952)
+
+    outfile = "joint_" + sketch_name + "_" + str(union_size) + "_" + str(b).replace(".","_") + ".pdf"
+    fig.savefig('paper/' + outfile, format='pdf', dpi=1200, metadata={'creationDate': None} )
+    plt.close(fig)
+
+
 filenames = glob.glob("data/joint_test*.csv")
 all_data = [read_data(f) for f in filenames]
-sketch_names = ["SetSketch1", "SetSketch2", "GeneralizedHyperLogLog"]
 
-union_sizes = sorted(set([get_true_union_size(data, j) for info, data, size in all_data for j in range(0, size) ]))
-jaccard_indices_inv = sorted(set([get_true_jaccard_similarity_inverse(data, j) for info, data, size in all_data for j in range(0, size) ]))
-base_values = sorted(set([float(info["base"]) for info, data, size in all_data]), reverse= True)
+union_sizes = [1000, 1000000]
 
-for sketch_name in sketch_names:
-    make_charts(all_data, sketch_name, union_sizes, jaccard_indices_inv, base_values)
+for sketch_name in ["SetSketch1", "SetSketch2", "GeneralizedHyperLogLog"]:
+    for union_size in union_sizes:
+        create_figure(sketch_name, all_data, union_size)
+
+for union_size in union_sizes:
+    create_small_figure("MinHash", all_data, union_size, 1.)
+
+# for sketch_name in ["SetSketch1", "SetSketch2", "GeneralizedHyperLogLog"]:
+#     for union_size in union_sizes:
+#         create_small_figure(sketch_name, all_data, union_size, 2)
+#         create_small_figure(sketch_name, all_data, union_size, 1.001)
+
+for union_size in union_sizes:
+    create_small_figure("HyperMinHash", all_data, union_size, 1.00067713069306641e+00)
+

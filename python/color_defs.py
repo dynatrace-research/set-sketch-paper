@@ -27,7 +27,12 @@ colorSetSketch1 = "#ef5675"
 colorSetSketch2 = "#003f5c"
 colorGHLL = "#ffa600"
 colorHLL = "#7a5195"
+colorMinhash = "black"
+
+colorHyperMinHashDensity = "#377eb8"
+colorGHLLDensity = colorGHLL
 
 colorBackgroundGray = "#e7e7e7"
+colorGray = "#777777"
 
-colorsSketches = {"SetSketch1" : colorSetSketch1,"SetSketch2" : colorSetSketch2,"GeneralizedHyperLogLog" : colorGHLL,"HyperLogLog" :colorHLL}
+colorsSketches = {"SetSketch1" : colorSetSketch1,"SetSketch2" : colorSetSketch2,"GeneralizedHyperLogLog" : colorGHLL,"HyperLogLog" :colorHLL, "MinHash" : colorMinhash}

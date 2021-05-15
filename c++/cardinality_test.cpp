@@ -45,16 +45,15 @@ static string getFileName(const C& config) {
 template<typename C>
 void test(uint64_t seed, const C& config) {
 
-    const uint64_t numExamples = 1000; // takes approx. 1h 30min
+    const uint64_t numExamples = 10000; // 10000 takes 1h 40min
 
     const vector<uint64_t> cardinalities = getCardinalities(10000000, 0.01);
 
     const uint64_t seedSize = 256;
 
-    vector<vector<double>> simpleEstimates(cardinalities.size(), vector<double>(numExamples));
-    vector<vector<double>> simpleCorrectedEstimates(cardinalities.size(), vector<double>(numExamples));
-    vector<vector<double>> mlEstimates(cardinalities.size(), vector<double>(numExamples));
-    vector<vector<double>> mlCorrectedEstimates(cardinalities.size(), vector<double>(numExamples));
+    const vector<string> estimatorLabels = config.getEstimator().getCardinalityEstimateLabels();
+    const size_t numEstimates = estimatorLabels.size();
+    vector<vector<vector<double>>> estimates(numEstimates, vector<vector<double>>(cardinalities.size(), vector<double>(numExamples)));
 
     mt19937 initialRng(seed);
     vector<uint32_t> seeds(numExamples * seedSize);
@@ -72,10 +71,8 @@ void test(uint64_t seed, const C& config) {
                 sketch.add(rng());
                 trueCardinality += 1;
             }
-            simpleEstimates[cardinalityIdx][i] = sketch.estimateCardinalitySimple(false);
-            simpleCorrectedEstimates[cardinalityIdx][i] = sketch.estimateCardinalitySimple(true);
-            mlEstimates[cardinalityIdx][i] = sketch.estimateCardinalityML(false);
-            mlCorrectedEstimates[cardinalityIdx][i] = sketch.estimateCardinalityML(true);
+            const auto results = config.getEstimator().estimateCardinalities(sketch.getState());
+            for(size_t j = 0; j < numEstimates; ++j) estimates[j][cardinalityIdx][i] = results[j];
         }
     }
 
@@ -83,25 +80,20 @@ void test(uint64_t seed, const C& config) {
     appendInfo(f, config);
     f << "numExamples=" << numExamples << ";";
     f << endl;
-    f << "true cardinality; simple mean; simple mse; simple corrected mean; simple corrected mse; ml mean; ml mse;ml corrected mean; ml corrected mse;" << endl;
+    f << "true cardinality; ";
+    for(size_t j = 0; j < numEstimates; ++j) f << estimatorLabels[j] << " mean; " << estimatorLabels[j] << " mse; " << estimatorLabels[j] << " standard deviation; " << estimatorLabels[j] << " kurtosis; ";
+    f << endl;
     for(uint64_t cardinalityIdx = 0; cardinalityIdx < cardinalities.size(); ++cardinalityIdx) {
         uint64_t trueCardinality = cardinalities[cardinalityIdx];
-        double meanSimple = calculateMean(simpleEstimates[cardinalityIdx]);
-        double mseSimple = calculateMSE(simpleEstimates[cardinalityIdx], trueCardinality);
-        double meanSimpleCorrected = calculateMean(simpleCorrectedEstimates[cardinalityIdx]);
-        double mseSimpleCorrected = calculateMSE(simpleCorrectedEstimates[cardinalityIdx], trueCardinality);
-        double meanML = calculateMean(mlEstimates[cardinalityIdx]);
-        double mseML = calculateMSE(mlEstimates[cardinalityIdx], trueCardinality);
-        double meanMLCorrected = calculateMean(mlCorrectedEstimates[cardinalityIdx]);
-        double mseMLCorrected = calculateMSE(mlCorrectedEstimates[cardinalityIdx], trueCardinality);
-
-        f << setprecision(numeric_limits< double >::max_digits10) << scientific <<
-            trueCardinality << ";" <<
-            meanSimple << "; " << mseSimple << "; " <<
-            meanSimpleCorrected << "; " << mseSimpleCorrected << "; " <<
-            meanML << "; " << mseML << "; " <<
-            meanMLCorrected << "; " << mseMLCorrected << "; " <<
-            endl;
+        f << setprecision(numeric_limits< double >::max_digits10) << scientific << trueCardinality << "; ";
+        for(size_t j = 0; j < numEstimates; ++j) {
+            double mean = calculateMean(estimates[j][cardinalityIdx]);
+            double mse = calculateMSE(estimates[j][cardinalityIdx], trueCardinality);
+            double standardDeviation = calculateStandardDeviation(estimates[j][cardinalityIdx]);
+            double kurtosis = calculateKurtosis(estimates[j][cardinalityIdx]);
+            f << mean << "; " << mse << "; " << standardDeviation << "; " << kurtosis << "; ";
+        }
+        f << endl;
     }
 
     f.close();
@@ -113,33 +105,21 @@ int main(int argc, char* argv[]) {
     mt19937_64 dataSeedRng(0xf5c1f864cefbf048);
 
     test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(256, 2., 62));
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(1024, 2., 62));
     test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(4096, 2., 62));
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint8_t>>(16384, 2., 62));
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62));
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(256, 2., 20, 62));
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint8_t>>(4096, 2., 20, 62));
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(256, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(1024, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(4096, 2., 30, 62));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(16384, 2., 30, 62));
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(256, 2., 20, 62));
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint8_t>>(4096, 2., 20, 62));
 
     test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(256, 1.001, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(1024, 1.001, std::numeric_limits<uint16_t>::max() - 1));
     test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(4096, 1.001, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), GeneralizedHyperLogLogConfig<RegistersWithLowerBound<uint16_t>>(16384, 1.001, std::numeric_limits<uint16_t>::max() - 1));
 
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(256, 1.001, 20, std::numeric_limits<uint16_t>::max() - 1));
+    test(dataSeedRng(), SetSketchConfig1<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 20, std::numeric_limits<uint16_t>::max() - 1));
 
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(256, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(1024, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
-    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(16384, 1.001, 30, std::numeric_limits<uint16_t>::max() - 1));
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(256, 1.001, 20, std::numeric_limits<uint16_t>::max() - 1));
+    test(dataSeedRng(), SetSketchConfig2<RegistersWithLowerBound<uint16_t>>(4096, 1.001, 20, std::numeric_limits<uint16_t>::max() - 1));
 
 }

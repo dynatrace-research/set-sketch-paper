@@ -32,14 +32,24 @@ import matplotlib.pyplot as plt
 import glob
 import matplotlib.ticker as mtick
 import color_defs
+from collections import namedtuple
 
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}\RequirePackage[T1]{fontenc} \RequirePackage[tt=false, type1=true]{libertine} \RequirePackage[varqu]{zi4} \RequirePackage[libertine]{newtxmath}')
 
+Config = namedtuple("config", ["sketch_name", "aggregation_mode", "register_state_type", "color", "linestyle"])
 
-sketch_names = ["SetSketch1", "SetSketch2", "GeneralizedHyperLogLog", "HyperLogLog"]
-sketch_labels = {"SetSketch1":"SetSketch1", "SetSketch2":"SetSketch2", "GeneralizedHyperLogLog":"GHLL", "HyperLogLog":"HLL"}
-linestyles = {"SetSketch1" : "solid","SetSketch2" : "dashed","GeneralizedHyperLogLog" :"dashdot","HyperLogLog" : (0,(1,1))}
+setsketch1_config = Config("SetSketch1", "stream", "registers with lower bound", color_defs.colorsSketches["SetSketch1"], "solid")
+setsketch2_config = Config("SetSketch2", "stream", "registers with lower bound", color_defs.colorsSketches["SetSketch2"], "solid")
+ghll_config = Config("GeneralizedHyperLogLog", "stream", "registers", color_defs.colorsSketches["GeneralizedHyperLogLog"], "solid")
+ghll_optimized_config = Config("GeneralizedHyperLogLog", "stream", "registers with lower bound", color_defs.colorsSketches["GeneralizedHyperLogLog"], "dotted")
+hll_config = Config("HyperLogLog", "stream", "registers", color_defs.colorsSketches["HyperLogLog"], "solid")
+hll_optimized_config = Config("HyperLogLog", "stream", "registers with lower bound", color_defs.colorsSketches["HyperLogLog"], "dotted")
+minhash_config = Config("MinHash", "stream", "", color_defs.colorsSketches["MinHash"], "dashdot")
+
+# sketch_names = ["SetSketch1", "SetSketch2", "GeneralizedHyperLogLog", "HyperLogLog", "MinHash"]
+# sketch_labels = {"SetSketch1":"SetSketch1", "SetSketch2":"SetSketch2", "GeneralizedHyperLogLog":"GHLL", "HyperLogLog":"HLL", "MinHash":"MinHash"}
+# linestyles = {"SetSketch1" : "solid","SetSketch2" : "dashed","GeneralizedHyperLogLog" :"dashdot","HyperLogLog" : (0,(1,1)), "MinHash": "dotted"}
 
 
 def readData(dataFile):
@@ -81,8 +91,6 @@ def readData(dataFile):
 
 
 def make_dummy_plot(ax, data):
-    cardinalities = []
-    times = []
     for d in data:
         if not "dummy" in d[0]:
             continue
@@ -90,14 +98,23 @@ def make_dummy_plot(ax, data):
         ax.plot(dd["cardinality"], dd["avg time in seconds"])
 
 
-def make_plot(ax, data, num_registers, base, sketch_name):
-    cardinalities = []
-    times = []
+def make_plot(ax, data, num_registers, base, config):
     for d in data:
-        if not "numRegisters" in d[0] or not "base" in d[0] or not "name" in d[0]or int(d[0]["numRegisters"]) != num_registers or float(d[0]["base"]) != base or d[0]["name"] != sketch_name:
+        if not "numRegisters" in d[0] or int(d[0]["numRegisters"]) != num_registers:
             continue
+        if not "name" in d[0] or d[0]["name"] !=  config.sketch_name:
+            continue
+        if not "aggregationMode" in d[0] or d[0]["aggregationMode"] !=  config.aggregation_mode:
+            continue
+
+        if  config.sketch_name != "MinHash":
+            if not "base" in d[0] or float(d[0]["base"]) != base:
+                continue
+            if not "registerStateType" in d[0] or d[0]["registerStateType"] !=  config.register_state_type:
+                continue
+
         dd = d[1]
-        ax.plot(dd["cardinality"], dd["avg time in seconds"],linestyle=linestyles[sketch_name], color=color_defs.colorsSketches[sketch_name])
+        ax.plot(dd["cardinality"], [a/b for a,b in zip(dd["avg time in seconds (excl. allocation)"], dd["cardinality"])], linestyle=config.linestyle, color=config.color)
 
 
 filenames = glob.glob("data/performance_test*.csv")
@@ -106,16 +123,16 @@ data = []
 for filename in filenames:
     data.append(readData(filename))
 
-fig, axs = plt.subplots(2, 2)
-fig.set_size_inches(6,3)
+fig, axs = plt.subplots(2, 2,sharey="row", sharex=True)
+fig.set_size_inches(6,3.3)
 
 for ax in fig.axes:
     ax.set_xscale("log", basex=10)
     ax.set_yscale("log", basey=10)
-    ax.yaxis.set_ticks([1e-6, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0])
-    ax.xaxis.set_ticks([1, 1e1, 1e2,1e3,1e4,1e5,1e6])
+    ax.yaxis.set_ticks([1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0])
+    # ax.xaxis.set_ticks([1, 1e1, 1e2,1e3,1e4,1e5,1e6])
     ax.set_xlim(1, 1e7)
-    ax.set_ylim(1e-6, 3e-1)
+    #ax.set_ylim(1e-9, 1e-3)
 
 plt.setp(axs[0][1].get_yticklabels(), visible=False)
 plt.setp(axs[1][1].get_yticklabels(), visible=False)
@@ -126,48 +143,57 @@ plt.setp(axs[0][1].get_xticklabels(), visible=False)
 axs[0][0].set_ylabel("time (s)")
 axs[1][0].set_ylabel("time (s)")
 
-# axs[1][1].set_xlabel("cardinality")
-# axs[1][0].set_xlabel("cardinality")
-axs[1][1].set_xlabel("$n$")
-axs[1][0].set_xlabel("$n$")
+axs[1][1].set_xlabel("cardinality")
+axs[1][0].set_xlabel("cardinality")
 
+base2_configs = [setsketch1_config, setsketch2_config, ghll_config, ghll_optimized_config, hll_config, hll_optimized_config]
 
-make_plot(axs[0][0], data, num_registers=256, base=2, sketch_name="SetSketch1")
-make_plot(axs[0][0], data, num_registers=256, base=2, sketch_name="SetSketch2")
-make_plot(axs[0][0], data, num_registers=256, base=2, sketch_name="HyperLogLog")
-make_plot(axs[0][0], data, num_registers=256, base=2, sketch_name="GeneralizedHyperLogLog")
-# make_dummy_plot(axs[0][0], data)
-fig.text(0.03, 0.97, "$m=256, b=2$", horizontalalignment='left', verticalalignment='top', transform=axs[0][0].transAxes)
+for c in base2_configs:
+    make_plot(axs[0][0], data, num_registers=256, base=2, config=c)
+fig.text(0.97, 0.97, "$m=256, b=2$", horizontalalignment='right', verticalalignment='top', transform=axs[0][0].transAxes)
 
-make_plot(axs[0][1], data, num_registers=4096, base=2, sketch_name="SetSketch1")
-make_plot(axs[0][1], data, num_registers=4096, base=2, sketch_name="SetSketch2")
-make_plot(axs[0][1], data, num_registers=4096, base=2, sketch_name="HyperLogLog")
-make_plot(axs[0][1], data, num_registers=4096, base=2, sketch_name="GeneralizedHyperLogLog")
-# make_dummy_plot(axs[0][1], data)
-fig.text(0.03, 0.97, "$m=4096, b=2$", horizontalalignment='left', verticalalignment='top', transform=axs[0][1].transAxes)
+for c in base2_configs:
+    make_plot(axs[1][0], data, num_registers=4096, base=2, config=c)
+fig.text(0.97, 0.97, "$m=4096, b=2$", horizontalalignment='right', verticalalignment='top', transform=axs[1][0].transAxes)
 
-make_plot(axs[1][0], data, num_registers=256, base=1.001, sketch_name="SetSketch1")
-make_plot(axs[1][0], data, num_registers=256, base=1.001, sketch_name="SetSketch2")
-make_plot(axs[1][0], data, num_registers=256, base=1.001, sketch_name="GeneralizedHyperLogLog")
-# make_dummy_plot(axs[1][0], data)
-fig.text(0.03, 0.97, "$m=256, b=1.001$", horizontalalignment='left', verticalalignment='top', transform=axs[1][0].transAxes)
+base1_001_configs = [setsketch1_config, setsketch2_config, ghll_config, ghll_optimized_config, minhash_config]
 
-make_plot(axs[1][1], data, num_registers=4096, base=1.001, sketch_name="SetSketch1")
-make_plot(axs[1][1], data, num_registers=4096, base=1.001, sketch_name="SetSketch2")
-make_plot(axs[1][1], data, num_registers=4096, base=1.001, sketch_name="GeneralizedHyperLogLog")
-# make_dummy_plot(axs[1][1], data)
-fig.text(0.03, 0.97, "$m=4096, b=1.001$", horizontalalignment='left', verticalalignment='top', transform=axs[1][1].transAxes)
+for c in base1_001_configs:
+    make_plot(axs[0][1], data, num_registers=256, base=1.001, config=c)
+fig.text(0.97, 0.97, "$m=256, b=1.001$", horizontalalignment='right', verticalalignment='top', transform=axs[0][1].transAxes)
+
+for c in base1_001_configs:
+    make_plot(axs[1][1], data, num_registers=4096, base=1.001, config=c)
+fig.text(0.97, 0.97, "$m=4096, b=1.001$", horizontalalignment='right', verticalalignment='top', transform=axs[1][1].transAxes)
 
 # legend
 leg_lines=[]
 leg_labels=[]
-for sketch_name in sketch_names:
-    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches[sketch_name], linestyle=linestyles[sketch_name]))
-    leg_labels.append(sketch_labels[sketch_name])
 
-fig.legend(leg_lines, leg_labels, loc="lower center", ncol=len(leg_labels))
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["SetSketch1"], linestyle="solid"))
+leg_labels.append("SetSketch1")
 
-fig.subplots_adjust(hspace=0.1, wspace=0.04, top=0.994, bottom=0.25, left=0.09, right=0.995)
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["SetSketch2"], linestyle="solid"))
+leg_labels.append("SetSketch2")
+
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["GeneralizedHyperLogLog"], linestyle="solid"))
+leg_labels.append("GHLL")
+
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["HyperLogLog"], linestyle="solid"))
+leg_labels.append("HLL")
+
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["GeneralizedHyperLogLog"], linestyle="dotted"))
+leg_labels.append("GHLL (lower bound tracking)")
+
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["HyperLogLog"], linestyle="dotted"))
+leg_labels.append("HLL (lower bound tracking)")
+
+leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorsSketches["MinHash"], linestyle="dashdot"))
+leg_labels.append("MinHash")
+
+fig.legend(leg_lines, leg_labels, loc="lower center", ncol=4)
+
+fig.subplots_adjust(hspace=0.1, wspace=0.04, top=0.98, bottom=0.29, left=0.09, right=0.995)
 
 fig.savefig('paper/performance.pdf', format='pdf', dpi=1200, metadata={'creationDate': None} )
 plt.close(fig)

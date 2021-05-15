@@ -102,33 +102,25 @@ def max_amplitude_zeta(b):
 
 bases = numpy.linspace(1.2,5,100)
 
-fig, ax = plt.subplots(1, 2, sharey = True)
-fig.set_size_inches(6, 2)
+fig, ax = plt.subplots(1, 1)
+fig.set_size_inches(3, 2)
 
-ax[0].set_yscale("log", basey=10)
-ax[0].set_ylim([1e-11, 1e0])
-ax[0].set_xlim([1,5])
-ax[0].set_yticks([1e-11,1e-8,1e-5,1e-2])
-ax[0].set_ylabel("relative approx. error")
+ax.set_yscale("log", basey=10)
+ax.set_ylim([1e-11, 1e0])
+ax.set_xlim([1,5])
+ax.set_yticks([1e-11,1e-8,1e-5,1e-2])
+ax.set_ylabel("relative approx. error")
 
-ax[0].set_xlabel(r"$b$")
-ax[0].set_title(r"$\max_x |\xi_b^r(x)-1|$")
+ax.set_xlabel(r"$b$")
+ax.set_title(r"$\max_x |\xi_b^r(x)-1|$")
 
-ax[0].plot(bases, [max_amplitude_xi(b, 1) for b in bases], label = "$r=1$", color="black")
-ax[0].plot(bases, [max_amplitude_xi(b, 2) for b in bases], label = "$r=2$", linestyle="dashed", color="black")
-ax[0].grid(True)
+ax.plot(bases, [max_amplitude_xi(b, 1) for b in bases], label = "$r=1$", color="black")
+ax.plot(bases, [max_amplitude_xi(b, 2) for b in bases], label = "$r=2$", linestyle="dashed", color="black")
+ax.grid(True)
 
-leg = ax[0].legend(loc = "lower right")
+leg = ax.legend(loc = "lower right")
 
-ax[1].set_xlim([1,5])
-ax[1].set_xlabel(r"$b$")
-
-ax[1].plot(bases, [max_amplitude_zeta(b) for b in bases], color="black")
-
-ax[1].set_title(r"$\max_{x_1,x_2} \left|\frac{\zeta_b(x_1,x_2)-(x_2-x_1)}{x_2-x_1}\right|$")
-ax[1].grid(True)
-
-fig.subplots_adjust(hspace=0.1, wspace=0.04, top=0.815, bottom=0.195, left=0.096, right=0.991)
+fig.subplots_adjust(top=0.86, bottom=0.195, left=0.13, right=0.991)
 
 fig.savefig('paper/helper_func_error.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})
 plt.close(fig)

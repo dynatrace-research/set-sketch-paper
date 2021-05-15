@@ -44,7 +44,7 @@ def log1pdiv(x):
     return log1p(x)/x if x != 0 else 1
 
 # 2*(b^((c/m+1)/2)-1)/(b-1)-1
-def estimateJLowerBound(c,m,b):
+def estimate_j_lower_bound(c,m,b):
     p = c/m
     l = log1pdiv(b-1)
     x = expm1div((p+1)*l*(b-1)/2)
@@ -52,59 +52,48 @@ def estimateJLowerBound(c,m,b):
     return xl*p+(xl-1)
 
 # (b^(c/m)-1)/(b-1)
-def estimateJUpperBound(c,m,b):
-    p = c/m
-    l = log1pdiv(b-1)
-    lp = l*p
-    return expm1div((b-1)*lp)*lp
+def estimate_j_upper_bound(c,m,b):
+    return (pow(b, c/m) - 1) / (b-1)
+    # p = c/m
+    # l = log1pdiv(b-1)
+    # lp = l*p
+    # return expm1div((b-1)*lp)*lp
 
-def prob(j,b, factor):
-    y = j+(1-j)*factor*(1-j)*(b-1)/b
-    return log1pdiv((b-1)*y) * y / log1pdiv(b-1)
+def prob_lower_bound(j,b):
+    return log(1+j*(b-1))/log(b)
 
-# log_b(1+J*(b-1))
-def probLowerBound(j,b):
-    return prob(j,b,0)
+def prob_upper_bound(j,b):
+    return log(1+j*(b-1)+pow(1-j,2)*pow(b-1,2)/(4*b))/log(b)
 
-# log_b(1+J*(b-1)+(1-J)^2(b-1)^2/(4b))
-def probUpperBound(j,b):
-    return prob(j,b,0.25)
-
-def theoreticalMseMinHash(j,m):
+def theoretical_mse_minhash(j,m):
     return j*(1-j)/m
 
-def theoreticalMseUpperBoundEstimator(j, p, m, b):
+def mse_of_upper_bound_estimator_for_equal_set_sizes(j, m, b):
+    collision_probability = prob_upper_bound(j,b)
+    mse = 0
+    for c in range(0,m+1):
+        prob = binom.pmf(c,m,collision_probability)
+        est = estimate_j_upper_bound(c,m,b)
+        mse += prob * pow(est-j,2)
+    return mse
+
+def mse_of_upper_bound_estimator_for_equal_set_sizes_fast_explicit_calculation(j, m, b):
+    collision_probability = prob_upper_bound(j,b)
     l = log1pdiv(b-1)
     k = l * (b-1) / m
     g1 = expm1div(k)
     g2 = expm1div(2*k)
-    h1 = log1pdiv(p*g1*k) * g1*l
-    h2 = log1pdiv(p*g2*2*k)*g2 * l
-    z1 = expm1div(p*(b-1)*h1) * h1
-    z2 = expm1div(p*2*(b-1)*h2) * h2
+    h1 = log1pdiv(collision_probability*g1*k) * g1*l
+    h2 = log1pdiv(collision_probability*g2*2*k)*g2 * l
+    z1 = expm1div(collision_probability*(b-1)*h1) * h1
+    z2 = expm1div(collision_probability*2*(b-1)*h2) * h2
 
-    mse = 2*p*(z2-z1)/(b-1) - j*(2*p*z1-j)
+    mse = 2*collision_probability*(z2-z1)/(b-1) - j*(2*collision_probability*z1-j)
     return mse
 
-def maxMseUpperBoundEstimate(j,m,b):
-    pUpperBound = probUpperBound(j,b)
-    pLowerBound = probLowerBound(j,b)
-
-    result = 0.
-    for p in numpy.linspace(pLowerBound,pUpperBound,100):
-        result = max(result, theoreticalMseUpperBoundEstimator(j, p, m, b))
-    return result
-
-def empiricalMseUpperBoundEstimator(j, p, m, b):
-    mse = 0
-    for c in range(0,m+1):
-        prob = binom.pmf(c,m,p)
-        est = estimateJUpperBound(c,m,b)
-        mse += prob * pow(est-j,2)
-    return mse
-
-def makeMSEUpperboundEstimationChart():
-    colors = ["#ffa600","#ff6361","#bc5090","#58508d","#003f5c"]
+def make_mse_upper_bound_estimation_chart():
+    colors = ["#003f5c", "#58508d", "#bc5090","#ff6361","#ffa600"]
+    linestyles = [(0, (1, 1)), (0, (3, 1, 1, 1, 1, 1)), (0, (3, 1, 1, 1)),(0, (5, 1)),"solid"]
 
     fig, axs = plt.subplots(1,2, sharey = True)
     fig.set_size_inches(6, 2)
@@ -115,28 +104,20 @@ def makeMSEUpperboundEstimationChart():
     for i in range(0,len(mvals)):
         m = mvals[i]
         ax = axs[i]
-        for bIdx in range(0, len(bvals)):
-            b = bvals[bIdx]
+        for b_idx in range(0, len(bvals)):
+            b = bvals[b_idx]
             x_theoretical = []
             y_theoretical = []
-            for j in numpy.linspace(1e-6,1-1e-3,1000):
-                p = probUpperBound(j,b)
-                mse1 = theoreticalMseUpperBoundEstimator(j, p, m, b)
-                mse2 = theoreticalMseMinHash(j,m)
+            for j in numpy.logspace(-1e-3,1-6,200):
+                
+                #mse1 = mse_of_upper_bound_estimator_for_equal_set_sizes_fast_explicit_calculation(j, m, b)
+                mse1 = mse_of_upper_bound_estimator_for_equal_set_sizes(j, m, b)
+                mse2 = theoretical_mse_minhash(j,m)
                 x_theoretical.append(j)
                 y_theoretical.append(sqrt(mse1/mse2))
-            pl = ax.plot(x_theoretical, y_theoretical, label="$b=" + str(b) + "$", color = colors[bIdx])
-
-            # x_empirical = []
-            # y_empirical = []
-            # for j in numpy.linspace(1e-3,1-1e-3,10):
-            #     p = probUpperBound(j,b)
-            #     mse1 = empiricalMseUpperBoundEstimator(j, p, m, b)
-            #     mse2 = theoreticalMseMinHash(j,m)
-            #     x_empirical.append(j)
-            #     y_empirical.append(sqrt(mse1/mse2))
-
-            # ax.scatter(x_empirical, y_empirical, marker='.', color=pl[0].get_color())
+                if y_theoretical[-1] > 3:
+                    break
+            pl = ax.plot(x_theoretical, y_theoretical, label="$b=" + str(b) + "$", color = colors[b_idx], linestyle = linestyles[b_idx])
 
         ax.grid(True)
         ax.set_xlim(-0.02, 1)
@@ -151,7 +132,7 @@ def makeMSEUpperboundEstimationChart():
     leg_lines=[]
     leg_labels=[]
     for k in range(0,len(bvals)):
-        leg_lines.append(matplotlib.lines.Line2D([0], [0], lw=1, color=colors[k] ))
+        leg_lines.append(matplotlib.lines.Line2D([0], [0], lw=1, color=colors[k], linestyle = linestyles[k] ))
         leg_labels.append("$b=" + str(bvals[k]) + "$")
     fig.legend(leg_lines, leg_labels, loc="lower center", bbox_to_anchor=(0.5, -0.02), ncol=len(leg_labels))
 
@@ -159,38 +140,36 @@ def makeMSEUpperboundEstimationChart():
 
     axs[0].set_ylabel(r"$\text{RMSE}/\sqrt{J(1-J)/m}$")
 
-    # ax.plot(xVals, [(pow(base, x)-1)/(base -1)-x for x in xVals], label="upper bound")
-
     fig.savefig('paper/mse_upperbound_estimation.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})
     plt.close(fig)
 
-def makeCollisionProbabilityChart():
-    fig, axs = plt.subplots(1,2, sharey = True)
+def make_collision_probability_chart():
+    fig, axs = plt.subplots(1,3, sharex = True, sharey = True)
     fig.set_size_inches(6, 1.8)
 
-    bvals = [2, 1.2]
+    bvals = [2, 1.2, 1.001]
     jvals = numpy.linspace(0,1,1000)
 
     for i in range(0,len(bvals)):
         b = bvals[i]
         ax = axs[i]
-        ax.fill_between(jvals, [probLowerBound(j,b) for j in jvals],[probUpperBound(j,b) for j in jvals], edgecolor="black", facecolor=color_defs.colorBackgroundGray, zorder=100)
+        ax.fill_between(jvals, [prob_lower_bound(j,b) for j in jvals],[prob_upper_bound(j,b) for j in jvals], edgecolor="black", facecolor=color_defs.colorBackgroundGray, zorder=100)
         ax.grid(True)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
+        ax.xaxis.set_ticks([0.0,0.2,0.4,0.6,0.8,1.0])
         ax.yaxis.set_ticks([0.0,0.2,0.4,0.6,0.8,1.0])
         ax.set_xlabel("$J$")
         ax2 = ax.twiny()
         ax2.set_xticks([])
         ax2.set_xlabel("$b=" + str(b) + "$")
 
+    axs[0].set_ylabel("$\Pr(K_{Ui}=K_{Vi})$")
 
-    axs[0].set_ylabel("$\Pr(K_{Ai}=K_{Bi})$")
-
-    fig.subplots_adjust(left=0.08, bottom=0.225, right=0.985, top=0.91, hspace=0.1, wspace=0.1)
+    fig.subplots_adjust(left=0.08, bottom=0.225, right=0.985, top=0.91, hspace=0.1, wspace=0.14)
 
     fig.savefig('paper/collision_probability.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})
     plt.close(fig)
 
-makeCollisionProbabilityChart()
-makeMSEUpperboundEstimationChart()
+make_collision_probability_chart()
+make_mse_upper_bound_estimation_chart()

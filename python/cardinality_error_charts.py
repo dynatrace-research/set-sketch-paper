@@ -36,6 +36,11 @@ import color_defs
 plt.rc('text', usetex=True)
 plt.rc('text.latex', preamble=r'\usepackage{amsmath}\RequirePackage[T1]{fontenc} \RequirePackage[tt=false, type1=true]{libertine} \RequirePackage[varqu]{zi4} \RequirePackage[libertine]{newtxmath}')
 
+
+expected_linestyle="dotted"
+expected_color=color_defs.colorGray
+expected_linewidth=2
+
 def read_data(data_file):
 
     info = {}
@@ -73,35 +78,21 @@ def calc_relative_error(true_cardinalities, mean):
     assert(len(true_cardinalities) == len(mean))
     return [(m - t)/t for t, m in zip(true_cardinalities, mean)]
 
-def calc_upper_error_helper(t,m,e):
-    a = e - pow(m - t,2)
-    if a >= 0:
-        return (m - t + math.sqrt(a))/t
-    else:
-        return float('inf')
-
-def calc_upper_error(true_cardinalities, mean, mse):
-    assert(len(true_cardinalities) == len(mean))
-    return [calc_upper_error_helper(t,m,e) for t,m,e in zip(true_cardinalities, mean, mse)]
-
-def calc_lower_error_helper(t,m,e):
-    a = e - pow(m - t,2)
-    if a >= 0:
-        return (m - t - math.sqrt(a))/t
-    else:
-        return -float('inf')
-
-def calc_lower_error(true_cardinalities, mean, mse):
-    assert(len(true_cardinalities) == len(mean))
-    return [calc_lower_error_helper(t,m,e) for t,m,e in zip(true_cardinalities, mean, mse)]
-
 def calculate_expected_relative_mse(m,b):
     return math.sqrt(((b + 1)/(b-1)*math.log(b)-1)/m)
 
-def make_chart(ax, data, num_registers, base):
+filenames = glob.glob("data/cardinality_test*.csv")
+
+data = []
+for filename in filenames:
+    data.append(read_data(filename))
+
+
+def get_data(m,b):
     card = None
     for d in data:
-        if int(d[0]["numRegisters"]) == num_registers and float(d[0]["base"]) == base:
+        if d[0]["name"] == "MinHash" or d[0]["name"] == "HyperMinHash" : continue
+        if int(d[0]["numRegisters"]) == m and float(d[0]["base"]) == b:
             if d[0]["name"] == "GeneralizedHyperLogLog":
                 data_ghll = d[1]
             elif d[0]["name"] == "SetSketch1":
@@ -115,97 +106,163 @@ def make_chart(ax, data, num_registers, base):
                 card = d[1]["true cardinality"]
             else:
                 assert(card == d[1]["true cardinality"])
-
     assert(data_ghll is not None)
     assert(data_ss1 is not None)
     assert(data_ss2 is not None)
 
-    expected_relative_mse = calculate_expected_relative_mse(num_registers, base)
+    return card, data_ss1, data_ss2, data_ghll
+
+def format_x_axis(ax):
     ax.set_xscale("log", basex=10)
-    ax.set_xlim(1, card[-1])
-    ax.set_ylim([-1.4/math.sqrt(num_registers), 1.4/math.sqrt(num_registers)])
-    ax.xaxis.set_minor_locator(matplotlib.ticker.LogLocator(base=10.0,numticks=10))
-    ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    ax.set_xlim([1,1e7])
 
-    ax.fill_between([1, card[-1]],[expected_relative_mse, expected_relative_mse], [-expected_relative_mse, -expected_relative_mse], color=color_defs.colorBackgroundGray, linewidth=1, label="expected RMSE")
+def plot_bias_chart(ax, m, b, prefix):
+    card, data_ss1, data_ss2, data_ghll = get_data(m,b)
 
-    data_ss1_mean = data_ss1["simple mean"][1:]
-    data_ss2_mean = data_ss2["simple mean"][1:]
-    data_ghll_mean = data_ghll["simple corrected mean"][1:]
+    data_ss1_mean = data_ss1[prefix + " mean"][1:]
+    data_ss2_mean = data_ss2[prefix + " mean"][1:]
+    data_ghll_mean = data_ghll[prefix + " mean"][1:]
 
-    data_ss1_mse = data_ss1["simple mse"][1:]
-    data_ss2_mse = data_ss2["simple mse"][1:]
-    data_ghll_mse = data_ghll["simple corrected mse"][1:]
+    ax.plot([1,1e8], [0,0], linewidth=expected_linewidth, linestyle=expected_linestyle, color = expected_color)
+    ax.plot(card[1:], [100*x for x in calc_relative_error(card[1:], data_ss1_mean)], linewidth=1, linestyle="solid", label="SetSketch1", color = color_defs.colorSetSketch1)
+    ax.plot(card[1:], [100*x for x in calc_relative_error(card[1:], data_ss2_mean)], linewidth=1, linestyle="solid", label="SetSketch2", color = color_defs.colorSetSketch2)
+    ax.plot(card[1:], [100*x for x in calc_relative_error(card[1:], data_ghll_mean)], linewidth=1, linestyle="solid", label="GHLL", color = color_defs.colorGHLL)
+    format_x_axis(ax)
 
-    ax.plot(card[1:], calc_relative_error(card[1:], data_ss1_mean), linewidth=1, linestyle="solid", label="SetSketch1", color = color_defs.colorSetSketch1)
-    ax.plot(card[1:], calc_lower_error(card[1:], data_ss1_mean, data_ss1_mse), linewidth=1, linestyle="dashed", color = color_defs.colorSetSketch1)
-    ax.plot(card[1:], calc_upper_error(card[1:], data_ss1_mean, data_ss1_mse), linewidth=1, linestyle="dashed", color = color_defs.colorSetSketch1)
+def plot_rmse_chart(ax, m, b, prefix):
+    card, data_ss1, data_ss2, data_ghll = get_data(m,b)
 
-    ax.plot(card[1:], calc_relative_error(card[1:], data_ss2_mean), linewidth=1, linestyle="solid", label="SetSketch2", color = color_defs.colorSetSketch2)
-    ax.plot(card[1:], calc_lower_error(card[1:], data_ss2_mean, data_ss2_mse), linewidth=1, linestyle="dashed", color = color_defs.colorSetSketch2)
-    ax.plot(card[1:], calc_upper_error(card[1:], data_ss2_mean, data_ss2_mse), linewidth=1, linestyle="dashed", color = color_defs.colorSetSketch2)
+    data_ss1_mse = data_ss1[prefix + " mse"]
+    data_ss2_mse= data_ss2[prefix + " mse"]
+    data_ghll_mse = data_ghll[prefix + " mse"]
 
-    ax.plot(card[1:], calc_relative_error(card[1:], data_ghll_mean), linewidth=1, linestyle="solid", label="GHLL", color = color_defs.colorGHLL)
-    ax.plot(card[1:], calc_lower_error(card[1:], data_ghll_mean, data_ghll_mse), linewidth=1, linestyle="dashed", color = color_defs.colorGHLL)
-    ax.plot(card[1:], calc_upper_error(card[1:], data_ghll_mean, data_ghll_mse), linewidth=1, linestyle="dashed", color = color_defs.colorGHLL)
+    expected = 100*calculate_expected_relative_mse(m,b)
+    ax.plot([1,1e8], [expected,expected], linewidth=expected_linewidth, linestyle=expected_linestyle, color = expected_color)
+    ax.plot(card[1:], [100*math.sqrt(data_ss1_mse[i]) / card[i] for i in range(1, len(card))], linewidth=1, linestyle="solid", label="SetSketch1", color = color_defs.colorSetSketch1)
+    ax.plot(card[1:], [100*math.sqrt(data_ss2_mse[i]) / card[i] for i in range(1, len(card))], linewidth=1, linestyle="solid", label="SetSketch2", color = color_defs.colorSetSketch2)
+    ax.plot(card[1:], [100*math.sqrt(data_ghll_mse[i]) / card[i] for i in range(1, len(card))], linewidth=1, linestyle="solid", label="GHLL", color = color_defs.colorGHLL)
+    format_x_axis(ax)
 
-filenames = glob.glob("data/cardinality_test*.csv")
+def plot_kurtosis_chart(ax, m, b, prefix):
+    card, data_ss1, data_ss2, data_ghll = get_data(m,b)
 
-data = []
-for filename in filenames:
-    data.append(read_data(filename))
+    data_ss1_kurtosis = data_ss1[prefix + " kurtosis"][1:]
+    data_ss2_kurtosis = data_ss2[prefix + " kurtosis"][1:]
+    data_ghll_kurtosis = data_ghll[prefix + " kurtosis"][1:]
 
-fig, ax = plt.subplots(4, 2, sharex=True, sharey="row")
-fig.set_size_inches(6, 6)
+    ax.plot([1,1e8], [3,3], linewidth=expected_linewidth, linestyle=expected_linestyle, color = expected_color)
+    ax.plot(card[1:], data_ss1_kurtosis, linewidth=1, linestyle="solid", label="SetSketch1", color = color_defs.colorSetSketch1)
+    ax.plot(card[1:], data_ss2_kurtosis, linewidth=1, linestyle="solid", label="SetSketch2", color = color_defs.colorSetSketch2)
+    ax.plot(card[1:], data_ghll_kurtosis, linewidth=1, linestyle="solid", label="GHLL", color = color_defs.colorGHLL)
+    format_x_axis(ax)
+    ax.set_yscale("log", basey=10)
+    ax.set_yticks([1,1e1,1e2,1e3,1e4,1e5])
+
+def make_chart(prefix):
+    fig = plt.figure(figsize=(6, 6), constrained_layout=False)
+
+    outer_grid = fig.add_gridspec(ncols=1, nrows=2, wspace=0., hspace=0.1)
+    inner_grids = [outer_grid[i, 0].subgridspec(ncols=2, nrows=3, wspace=0.04, hspace=0.12) for i in range(0,2)]
+
+    ax_m256_b2_bias = fig.add_subplot(inner_grids[0][0, 0])
+    ax_m256_b2_rmse = fig.add_subplot(inner_grids[0][1, 0])
+    ax_m256_b2_kurtosis = fig.add_subplot(inner_grids[0][2, 0])
+    ax_m256_b1_001_bias = fig.add_subplot(inner_grids[0][0, 1])
+    ax_m256_b1_001_rmse = fig.add_subplot(inner_grids[0][1, 1])
+    ax_m256_b1_001_kurtosis = fig.add_subplot(inner_grids[0][2, 1])
+    ax_m4096_b2_bias = fig.add_subplot(inner_grids[1][0, 0])
+    ax_m4096_b2_rmse = fig.add_subplot(inner_grids[1][1, 0])
+    ax_m4096_b2_kurtosis = fig.add_subplot(inner_grids[1][2, 0])
+    ax_m4096_b1_001_bias = fig.add_subplot(inner_grids[1][0, 1])
+    ax_m4096_b1_001_rmse = fig.add_subplot(inner_grids[1][1, 1])
+    ax_m4096_b1_001_kurtosis = fig.add_subplot(inner_grids[1][2, 1])
+
+    plot_bias_chart(ax_m256_b2_bias, 256, 2, prefix)
+    plot_bias_chart(ax_m256_b1_001_bias, 256, 1.001, prefix)
+    plot_rmse_chart(ax_m256_b2_rmse, 256, 2, prefix)
+    plot_rmse_chart(ax_m256_b1_001_rmse, 256, 1.001, prefix)
+    plot_kurtosis_chart(ax_m256_b2_kurtosis, 256, 2, prefix)
+    plot_kurtosis_chart(ax_m256_b1_001_kurtosis, 256, 1.001, prefix)
+
+    plot_bias_chart(ax_m4096_b2_bias, 4096, 2, prefix)
+    plot_bias_chart(ax_m4096_b1_001_bias, 4096, 1.001, prefix)
+    plot_rmse_chart(ax_m4096_b2_rmse, 4096, 2, prefix)
+    plot_rmse_chart(ax_m4096_b1_001_rmse, 4096, 1.001, prefix)
+    plot_kurtosis_chart(ax_m4096_b2_kurtosis, 4096, 2, prefix)
+    plot_kurtosis_chart(ax_m4096_b1_001_kurtosis, 4096, 1.001, prefix)
+
+    # y-labels
+    for ax,label in [(ax_m256_b1_001_rmse, "$m=256$"), (ax_m4096_b1_001_rmse, "$m=4096$")]:
+        ax2 = ax.twinx()
+        ax2.set_yticks([])
+        ax2.set_ylabel(label, rotation=270, labelpad=14)
+
+    for ax,label in [(ax_m256_b2_bias, "$b=2$"), (ax_m256_b1_001_bias, "$b=1.001$")]:
+        ax2 = ax.twiny()
+        ax2.set_xticks([])
+        ax2.set_xlabel(label)
+
+    for ax in [ax_m4096_b2_kurtosis, ax_m4096_b1_001_kurtosis]:
+        ax.set_xlabel("cardinality")
+
+    for ax in [ax_m256_b2_kurtosis, ax_m4096_b2_kurtosis]:
+        ax.set_ylabel("kurtosis")
+
+    for ax in [ax_m256_b2_bias, ax_m4096_b2_bias]:
+        ax.set_ylabel("rel. bias (\%)")
+
+    # y-axis limits
+    for ax in [ax_m256_b2_bias, ax_m256_b1_001_bias]:
+        ax.set_ylim([-0.2, 0.7])
+
+    for ax in [ax_m4096_b2_bias, ax_m4096_b1_001_bias]:
+        ax.set_ylim([-0.2/4, 0.7/4])
+
+    for ax in [ax_m256_b2_rmse, ax_m4096_b2_rmse]:
+        ax.set_ylabel("rel. RMSE (\%)")
+
+    for ax in [ax_m4096_b2_rmse, ax_m4096_b1_001_rmse]:
+        ax.set_ylim([0., 2])
+
+    for ax in [ax_m256_b2_rmse, ax_m256_b1_001_rmse]:
+        ax.set_ylim([0., 2*4])
+
+    for ax in [ax_m4096_b2_kurtosis, ax_m4096_b1_001_kurtosis]:
+        ax.set_ylim([1, 5e4])
+
+    for ax in [ax_m256_b2_kurtosis, ax_m256_b1_001_kurtosis]:
+        ax.set_ylim([1., 5e2])
+
+    # position y-axis labels
+    for ax in [ax_m256_b2_rmse, ax_m256_b2_bias, ax_m256_b2_kurtosis, ax_m4096_b2_rmse, ax_m4096_b2_bias, ax_m4096_b2_kurtosis]:
+        ax.yaxis.set_label_coords(x=-0.13, y=0.5,transform=ax.transAxes)
+
+    # remove x-axis labels for inner charts
+    for ax in [ax_m256_b2_rmse, ax_m256_b2_bias, ax_m4096_b2_rmse, ax_m4096_b2_bias, ax_m256_b1_001_rmse, ax_m256_b1_001_bias, ax_m4096_b1_001_rmse, ax_m4096_b1_001_bias]:
+        ax.xaxis.set_ticklabels([])
+
+    # remove y-axis labels for inner charts
+    for ax in [ax_m256_b1_001_rmse, ax_m4096_b1_001_rmse, ax_m256_b1_001_bias, ax_m4096_b1_001_bias, ax_m256_b1_001_kurtosis, ax_m4096_b1_001_kurtosis]:
+        ax.yaxis.set_ticklabels([])
 
 
-num_registers = [256, 1024, 4096, 16384]
-bases = [2, 1.001]
+    # legend
+    leg_lines=[]
+    leg_labels=[]
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorSetSketch1))
+    leg_labels.append("SetSketch1")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorSetSketch2))
+    leg_labels.append("SetSketch2")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorGHLL))
+    leg_labels.append("GHLL")
+    leg_lines.append(matplotlib.lines.Line2D([0], [0], linewidth=expected_linewidth, linestyle=expected_linestyle, color = expected_color))
+    leg_labels.append("expected")
+    fig.legend(leg_lines, leg_labels, loc="lower center", ncol=len(leg_labels), bbox_to_anchor=(0.5,-0.009))
 
+    fig.subplots_adjust(right=0.96, left=0.082, top=0.97,bottom=0.12)
 
-for i in range(0,2):
-    ax[3][i].set_xlabel("cardinality")
-    ax2 = ax[0][i].twiny()
-    ax2.set_xticks([])
-    ax2.set_xlabel("$b=" + '{0:g}'.format(bases[i]) + "$")
-for i in range(0,4):
-    ax[i][0].set_ylabel("relative error")
-    ax[i][0].yaxis.set_major_formatter(mtick.PercentFormatter(1,0))
-    if num_registers[i] == 256:
-        ax[i][0].set_yticks([-0.05,0,0.05])
-        ax[i][0].yaxis.set_minor_locator(matplotlib.ticker.FixedLocator([-0.2 + k*0.01 for k in range(0, 41)]))
-    elif num_registers[i] == 1024:
-        ax[i][0].set_yticks([-0.04,-0.02,0.0,0.02,0.04])
-        ax[i][0].yaxis.set_minor_locator(matplotlib.ticker.FixedLocator([-0.1 + k*0.01 for k in range(0, 21)]))
-    elif num_registers[i] == 4096:
-        ax[i][0].set_yticks([-0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05])
-        ax[i][0].yaxis.set_minor_locator(matplotlib.ticker.FixedLocator([-0.1 + k*0.005 for k in range(0, 41)]))
-    else:
-        ax[i][0].set_yticks([-0.05, -0.04, -0.03, -0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05])
-        ax[i][0].yaxis.set_minor_locator(matplotlib.ticker.FixedLocator([-0.02 + k*0.002 for k in range(0, 21)]))
-    ax2 = ax[i][1].twinx()
-    ax2.set_yticks([])
-    ax2.set_ylabel("$m=" + str(num_registers[i]) + "$", labelpad=12, rotation=270)
+    fig.savefig("paper/cardinality_" + prefix + ".pdf", format='pdf', dpi=1200, metadata={'creationDate': None})
+    plt.close(fig)
 
-
-for i in range(0, len(num_registers)):
-    for j in range(0, len(bases)):
-        make_chart(ax[i][j], data, num_registers=num_registers[i], base=bases[j])
-
- # legend
-leg_lines=[]
-leg_labels=[]
-leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorSetSketch1))
-leg_labels.append("SetSketch1")
-leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorSetSketch2))
-leg_labels.append("SetSketch2")
-leg_lines.append(matplotlib.lines.Line2D([0], [0], color=color_defs.colorGHLL))
-leg_labels.append("GHLL")
-leg_lines.append(matplotlib.patches.Patch(facecolor=color_defs.colorBackgroundGray))
-leg_labels.append("expected RMSE")
-fig.legend(leg_lines, leg_labels, loc="lower center", ncol=len(leg_labels), bbox_to_anchor=(0.5,-0.009))
-
-fig.subplots_adjust(right=0.97, left=0.082, top=0.97,bottom=0.12, hspace=0.1, wspace=0.05)
-
-fig.savefig('paper/cardinality.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})
-plt.close(fig)
+make_chart("ml")
+make_chart("simple")

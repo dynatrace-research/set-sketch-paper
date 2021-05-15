@@ -59,6 +59,21 @@ double calculateMean(const std::vector<double>& estimatedValues) {
     return calculateMean([&estimatedValues](uint64_t idx){return estimatedValues[idx];}, estimatedValues.size());
 }
 
+double calculateStandardDeviation(const std::vector<double>& estimatedValues) {
+    double mean = calculateMean(estimatedValues);
+    double standardDeviation = std::sqrt(calculateMSE(estimatedValues, mean));
+    return standardDeviation;
+}
+
+double calculateKurtosis(const std::vector<double>& estimatedValues) {
+    double mean = calculateMean(estimatedValues);
+    double standardDeviation = std::sqrt(calculateMSE(estimatedValues, mean));
+    double sum = 0;
+    for(double v : estimatedValues) {
+        sum += std::pow((v - mean) / standardDeviation, 4);
+    }
+    return sum / estimatedValues.size();
+}
 
 std::vector<uint64_t> getCardinalities(uint64_t max, double relativeIncrement) {
     assert(relativeIncrement > 0);
