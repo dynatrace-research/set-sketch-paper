@@ -1,6 +1,6 @@
 # SetSketch: Filling the Gap between MinHash and HyperLogLog
 
-This repository contains the source code to reproduce all the results and figures presented in the paper "SetSketch: Filling the Gap between MinHash and HyperLogLog" ([arXiv preprint](https://arxiv.org/abs/2101.00314)).
+This repository contains the source code to reproduce all the results and figures presented in the paper "SetSketch: Filling the Gap between MinHash and HyperLogLog" which was accepted at [VLDB 2021](https://vldb.org/2021/). An extended paper version that includes mathematical proofs and additional results is available on [arXiv](https://arxiv.org/abs/2101.00314).
 
 ## Abstract
 MinHash and HyperLogLog are sketching algorithms that have become indispensable for set summaries in big data applications. While HyperLogLog allows counting different elements with very little space, MinHash is suitable for the fast comparison of sets as it allows estimating the Jaccard similarity and other joint quantities. This work presents a new data structure called SetSketch that is able to continuously fill the gap between both use cases. Its commutative and idempotent insert operation and its mergeable state make it suitable for distributed environments. Fast, robust, and easy-to-implement estimators for cardinality and joint quantities, as well as the ability to use SetSketch for similarity search, enable versatile applications. The presented joint estimator can also be applied to other data structures such as MinHash, HyperLogLog, or HyperMinHash, where it even performs better than the corresponding state-of-the-art estimators in many cases.
@@ -10,7 +10,7 @@ MinHash and HyperLogLog are sketching algorithms that have become indispensable 
 
 2. Install required packages:
    ```
-   sudo apt install gradle g++ libboost-dev python3-matplotlib python3-scipy texlive-full
+   sudo apt update && sudo apt install gradle g++ libboost-dev python3-matplotlib python3-scipy texlive texlive-latex-extra texlive-fonts-extra
    ```
 3. Clone repository including submodules:
    ```
