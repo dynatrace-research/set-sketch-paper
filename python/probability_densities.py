@@ -44,24 +44,24 @@ def space_efficiency(b, max):
     numBits = log(log(max)/log(b))/log(2)
     return expected_relative_error(b) * sqrt(numBits)
 
-def cdfGHLL(base, k):
+def cdf_ghll(base, k):
     if k <= 0:
         return 0
     else:
         return 1 - pow(base, -k)
 
-def pdfGHLL(base, k):
-    return cdfGHLL(base, k) - cdfGHLL(base, k-1)
+def pdf_ghll(base, k):
+    return cdf_ghll(base, k) - cdf_ghll(base, k-1)
 
-def cdfSetSketch(base, a, k):
+def cdf_setsketch(base, a, k):
     return exp(-a*pow(base, -k))
 
-def pdfSetSketch(base, a, k):
-    return cdfSetSketch(base, a, k) - cdfSetSketch(base, a, k-1)
+def pdf_setsketch(base, a, k):
+    return cdf_setsketch(base, a, k) - cdf_setsketch(base, a, k-1)
 
-
-def pdfGHyperMinHash(base, n, k):
-    return pdfGHLL(base, (k + n - 1) // n) / n
+def pdf_hyperminhash(r, k):
+    n = 2**r
+    return pdf_ghll(2, (k + n - 1) // n) / n
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches(6, 1.6)
@@ -78,12 +78,12 @@ ax[1].yaxis.set_ticks([pow(2,-14),pow(2,-12),pow(2,-10), pow(2,-8), pow(2,-6), p
 ax[0].set_ylim([pow(2,-12), pow(2,-1)])
 ax[1].set_ylim([pow(2,-14), pow(2,-3)])
 
-ax[0].bar([kVal-0.2 for kVal in kVals1], [pdfGHLL(pow(2, 1/2), kVal) for kVal in kVals1], width=0.4, label=r"GHLL $(b=\sqrt{2})$", color=color_defs.colorGHLLDensity)
-ax[0].bar([kVal+0.2 for kVal in kVals1], [pdfGHyperMinHash(2, 2, kVal) for kVal in kVals1], width = 0.4, label=r"HyperMinHash $(r=2)$", color=color_defs.colorHyperMinHashDensity)
+ax[0].bar([kVal-0.2 for kVal in kVals1], [pdf_ghll(pow(2, 1/2), kVal) for kVal in kVals1], width=0.4, label=r"GHLL $(b=\sqrt{2})$", color=color_defs.colorGHLLDensity)
+ax[0].bar([kVal+0.2 for kVal in kVals1], [pdf_hyperminhash(1, kVal) for kVal in kVals1], width = 0.4, label=r"HyperMinHash $(r=1)$", color=color_defs.colorHyperMinHashDensity)
 ax[0].legend(loc="upper right")#, prop={'size': 8})
 
-ax[1].bar([kVal-0.2 for kVal in kVals2], [pdfGHLL(pow(2, 1/8), kVal) for kVal in kVals2], width=0.4, label=r"GHLL $(b=\sqrt[8]{2})$", color=color_defs.colorGHLLDensity)
-ax[1].bar([kVal+0.2 for kVal in kVals2], [pdfGHyperMinHash(2, 8, kVal) for kVal in kVals2], width=0.4, label=r"HyperMinHash $(r=8)$", color=color_defs.colorHyperMinHashDensity)
+ax[1].bar([kVal-0.2 for kVal in kVals2], [pdf_ghll(pow(2, 1/8), kVal) for kVal in kVals2], width=0.4, label=r"GHLL $(b=\sqrt[8]{2})$", color=color_defs.colorGHLLDensity)
+ax[1].bar([kVal+0.2 for kVal in kVals2], [pdf_hyperminhash(3, kVal) for kVal in kVals2], width=0.4, label=r"HyperMinHash $(r=3)$", color=color_defs.colorHyperMinHashDensity)
 ax[1].legend(loc="upper right")#, prop={'size': 8})
 
 fig.subplots_adjust(left=0.055, bottom=0.13, right=0.993, top=0.985, wspace=0.15)
