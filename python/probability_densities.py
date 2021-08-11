@@ -66,17 +66,18 @@ def pdf_hyperminhash(r, k):
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches(6, 1.6)
 
-kVals1 = range(0, 21)
-kVals2 = range(0, 81)
+kVals1 = range(0, 16)
+kVals2 = range(0, 61)
 
+ax[0].set_ylabel("probability")
 ax[0].set_yscale("log", basey=2)
 ax[1].set_yscale("log", basey=2)
-ax[0].set_xlim([-0.5,20.5])
-ax[1].set_xlim([-0.5, 80.5])
+ax[0].set_xlim([-0.5,15.5])
+ax[1].set_xlim([-0.5, 60.5])
 ax[0].yaxis.set_ticks([pow(2,-12),pow(2,-10), pow(2,-8), pow(2,-6), pow(2,-4), pow(2,-2)])
 ax[1].yaxis.set_ticks([pow(2,-14),pow(2,-12),pow(2,-10), pow(2,-8), pow(2,-6), pow(2,-4)])
-ax[0].set_ylim([pow(2,-12), pow(2,-1)])
-ax[1].set_ylim([pow(2,-14), pow(2,-3)])
+ax[0].set_ylim([pow(2,-10), pow(2,-1)])
+ax[1].set_ylim([pow(2,-12), pow(2,-3)])
 
 ax[0].bar([kVal-0.2 for kVal in kVals1], [pdf_ghll(pow(2, 1/2), kVal) for kVal in kVals1], width=0.4, label=r"GHLL $(b=\sqrt{2})$", color=color_defs.colorGHLLDensity)
 ax[0].bar([kVal+0.2 for kVal in kVals1], [pdf_hyperminhash(1, kVal) for kVal in kVals1], width = 0.4, label=r"HyperMinHash $(r=1)$", color=color_defs.colorHyperMinHashDensity)
@@ -86,6 +87,6 @@ ax[1].bar([kVal-0.2 for kVal in kVals2], [pdf_ghll(pow(2, 1/8), kVal) for kVal i
 ax[1].bar([kVal+0.2 for kVal in kVals2], [pdf_hyperminhash(3, kVal) for kVal in kVals2], width=0.4, label=r"HyperMinHash $(r=3)$", color=color_defs.colorHyperMinHashDensity)
 ax[1].legend(loc="upper right")#, prop={'size': 8})
 
-fig.subplots_adjust(left=0.055, bottom=0.13, right=0.993, top=0.985, wspace=0.15)
+fig.subplots_adjust(left=0.085, bottom=0.13, right=0.992, top=0.985, wspace=0.15)
 fig.savefig('paper/probability_densities.pdf', format='pdf', dpi=1200, metadata={'creationDate': None})
 plt.close(fig)

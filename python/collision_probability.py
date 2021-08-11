@@ -164,7 +164,7 @@ def make_collision_probability_chart():
         ax2.set_xticks([])
         ax2.set_xlabel("$b=" + str(b) + "$")
 
-    axs[0].set_ylabel("$\Pr(K_{Ui}=K_{Vi})$")
+    axs[0].set_ylabel("$P(K_{Ui}=K_{Vi})$")
 
     fig.subplots_adjust(left=0.08, bottom=0.225, right=0.985, top=0.91, hspace=0.1, wspace=0.14)
 
